@@ -445,6 +445,55 @@
         font-size: 26px;
       }
     }
+    .pending-card {
+      text-align: center;
+    }
+
+    .pending-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 18px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--primary-soft);
+      font-size: 34px;
+    }
+
+    .pending-main {
+      margin-bottom: 18px;
+      font-size: 17px;
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .pending-box {
+      margin: 18px 0;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #f8f9ff;
+    }
+
+    .pending-box p {
+      margin: 0 0 8px;
+    }
+
+    .pending-box p:last-child {
+      margin-bottom: 0;
+    }
+
+    .pending-email {
+      color: var(--primary);
+      font-weight: 800;
+      word-break: break-all;
+    }
+
+    .pending-sub {
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: var(--muted);
+    }
   </style>
 </head>
 
@@ -473,11 +522,26 @@
 
     <section id="homeScreen" class="screen hidden">
       <section id="pendingScreen" class="screen hidden">
-  <div class="card">
-    <h1>승인 대기 중</h1>
-    <p>회원가입은 완료되었습니다.</p>
-    <p>관리자가 승인하면 엽서 목록을 이용할 수 있습니다.</p>
-    <p id="pendingEmail"></p>
+  <div class="card pending-card">
+    <div class="pending-icon">⏳</div>
+
+    <h1>승인 대기 중입니다</h1>
+
+    <p class="pending-main">
+      회원가입은 완료되었지만, 아직 관리자 승인이 필요합니다.
+    </p>
+
+    <div class="pending-box">
+      <p>
+        관리자가 승인하면 <b>세배엽 목록</b>과 <b>4기엽 목록</b>을 이용할 수 있습니다.
+      </p>
+      <p id="pendingEmail" class="pending-email"></p>
+    </div>
+
+    <p class="pending-sub">
+      승인이 완료된 뒤에는 새로고침하거나 다시 로그인해주세요.
+    </p>
+
     <button id="pendingLogoutBtn" type="button" class="small-btn">로그아웃</button>
   </div>
 </section>
