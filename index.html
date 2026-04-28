@@ -445,7 +445,7 @@
         font-size: 26px;
       }
     }
-    pending-card {
+    .pending-card {
       text-align: center;
     }
 
@@ -520,16 +520,15 @@
       </div>
     </section>
 
-    <section id="homeScreen" class="screen hidden">
-      <section id="pendingScreen" class="screen hidden">
-  <div class="card pending-card">
-    <div class="pending-icon">⏳</div>
-
-    <h1>승인 대기 중입니다</h1>
-
-    <p class="pending-main">
+    <section id="pendingScreen" class="screen hidden">
+      <div class="card pending-card">
+        <div class="pending-icon">⏳</div>
+        
+        <h1>승인 대기 중입니다</h1>
+        
+        <p class="pending-main">
       회원가입은 완료되었지만, 아직 관리자 승인이 필요합니다.
-    </p>
+        </p>
 
     <div class="pending-box">
       <p>
@@ -545,6 +544,8 @@
     <button id="pendingLogoutBtn" type="button" class="small-btn">로그아웃</button>
   </div>
 </section>
+
+    <section id="homeScreen" class="screen hidden">
       <div class="card home-card">
         <div class="top">
           <div>
@@ -560,7 +561,6 @@
         </div>
       </div>
     </section>
-
     <section id="listScreen" class="screen hidden">
       <div class="card wide">
         <div class="top">
