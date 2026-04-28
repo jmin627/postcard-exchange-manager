@@ -472,6 +472,15 @@
     </section>
 
     <section id="homeScreen" class="screen hidden">
+      <section id="pendingScreen" class="screen hidden">
+  <div class="card">
+    <h1>승인 대기 중</h1>
+    <p>회원가입은 완료되었습니다.</p>
+    <p>관리자가 승인하면 엽서 목록을 이용할 수 있습니다.</p>
+    <p id="pendingEmail"></p>
+    <button id="pendingLogoutBtn" type="button" class="small-btn">로그아웃</button>
+  </div>
+</section>
       <div class="card home-card">
         <div class="top">
           <div>
@@ -599,6 +608,7 @@
     let selectedCategory = "기부";
 
     const authScreen = document.getElementById("authScreen");
+    const pendingScreen = document.getElementById("pendingScreen");
     const homeScreen = document.getElementById("homeScreen");
     const listScreen = document.getElementById("listScreen");
 
@@ -610,6 +620,8 @@
     const signupBtn = document.getElementById("signupBtn");
     const loginBtn = document.getElementById("loginBtn");
     const logoutBtn = document.getElementById("logoutBtn");
+    const pendingEmail = document.getElementById("pendingEmail");
+    const pendingLogoutBtn = document.getElementById("pendingLogoutBtn");
 
     const sebaeBtn = document.getElementById("sebaeBtn");
     const fourthBtn = document.getElementById("fourthBtn");
@@ -631,14 +643,16 @@
     const toast = document.getElementById("toast");
 
     function showScreen(screenName) {
-      authScreen.classList.add("hidden");
-      homeScreen.classList.add("hidden");
-      listScreen.classList.add("hidden");
+  authScreen.classList.add("hidden");
+  pendingScreen.classList.add("hidden");
+  homeScreen.classList.add("hidden");
+  listScreen.classList.add("hidden");
 
-      if (screenName === "auth") authScreen.classList.remove("hidden");
-      if (screenName === "home") homeScreen.classList.remove("hidden");
-      if (screenName === "list") listScreen.classList.remove("hidden");
-    }
+  if (screenName === "auth") authScreen.classList.remove("hidden");
+  if (screenName === "pending") pendingScreen.classList.remove("hidden");
+  if (screenName === "home") homeScreen.classList.remove("hidden");
+  if (screenName === "list") listScreen.classList.remove("hidden");
+}
 
     function showAuthMessage(message) {
       authMessage.textContent = message;
@@ -654,6 +668,27 @@
       }, 1800);
     }
 
+    async function ensureUserProfile(user) {
+  const userRef = doc(db, "users", user.uid);
+  const snapshot = await getDoc(userRef);
+
+  if (!snapshot.exists()) {
+    await setDoc(userRef, {
+      email: user.email,
+      approved: false,
+      role: "user",
+      createdAt: serverTimestamp()
+    });
+
+    return {
+      email: user.email,
+      approved: false,
+      role: "user"
+    };
+  }
+
+  return snapshot.data();
+}
     function getCurrentListRef() {
       if (!currentUser || !currentListType) {
         throw new Error("로그인 또는 목록 선택 상태가 아닙니다.");
@@ -1083,20 +1118,38 @@
 
       await signOut(auth);
     });
+    pendingLogoutBtn.addEventListener("click", async () => {
+  await signOut(auth);
+});
 
-    onAuthStateChanged(auth, (user) => {
-      currentUser = user;
+    onAuthStateChanged(auth, async (user) => {
+  currentUser = user;
 
-      if (user) {
-        userEmail.textContent = `${user.email} 계정으로 로그인 중`;
-        showScreen("home");
-      } else {
-        currentListType = null;
-        entries = [];
-        userEmail.textContent = "";
-        showScreen("auth");
-      }
-    });
+  if (!user) {
+    currentListType = null;
+    entries = [];
+    userEmail.textContent = "";
+    if (pendingEmail) pendingEmail.textContent = "";
+    showScreen("auth");
+    return;
+  }
+
+  try {
+    const profile = await ensureUserProfile(user);
+
+    if (profile.approved === true) {
+      userEmail.textContent = `${user.email} 계정으로 로그인 중`;
+      showScreen("home");
+    } else {
+      pendingEmail.textContent = `${user.email} 계정은 현재 승인 대기 중입니다.`;
+      showScreen("pending");
+    }
+  } catch (error) {
+    console.error(error);
+    showAuthMessage("사용자 승인 정보를 확인하지 못했습니다.");
+    showScreen("auth");
+  }
+});
 
     sebaeBtn.addEventListener("click", () => openList("sebae"));
     fourthBtn.addEventListener("click", () => openList("fourth"));
