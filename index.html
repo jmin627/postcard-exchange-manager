@@ -546,6 +546,78 @@
   padding: 0 12px;
   border-radius: 10px;
 }
+
+    .home-buttons {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .sort-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .sort-btn {
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 10px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .sort-btn.active {
+      background: var(--primary-soft);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .combined-card {
+      width: min(1380px, 100%);
+    }
+
+    .dual-list-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      align-items: start;
+    }
+
+    .dual-panel {
+      min-width: 0;
+    }
+
+    .dual-panel-title {
+      margin: 0 0 10px;
+      font-size: 22px;
+      letter-spacing: -0.03em;
+    }
+
+    .dual-panel .table-wrap {
+      max-height: 70vh;
+      overflow: auto;
+    }
+
+    .dual-panel table {
+      min-width: 760px;
+    }
+
+    @media (max-width: 980px) {
+      .home-buttons {
+        grid-template-columns: 1fr;
+      }
+
+      .dual-list-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
   </style>
 </head>
 
@@ -607,9 +679,10 @@
           <button id="logoutBtn" type="button" class="small-btn">로그아웃</button>
         </div>
 
-        <div class="big-buttons">
+        <div class="big-buttons home-buttons">
           <button id="sebaeBtn" type="button" class="big-btn">세배엽 목록</button>
           <button id="fourthBtn" type="button" class="big-btn">4기엽 목록</button>
+          <button id="combinedBtn" type="button" class="big-btn">한눈에 보기</button>
         </div>
 
         <div class="admin-area">
@@ -643,6 +716,79 @@
     </div>
   </div>
 </section>
+
+    <section id="combinedScreen" class="screen hidden">
+      <div class="card wide combined-card">
+        <div class="top">
+          <div>
+            <h1>세배엽 / 4기엽 한눈에 보기</h1>
+            <p>두 목록을 좌우로 동시에 확인할 수 있습니다.</p>
+          </div>
+          <button id="backCombinedHomeBtn" type="button" class="small-btn">처음으로</button>
+        </div>
+
+        <div class="toolbar">
+          <input id="combinedSearchInput" type="text" placeholder="두 목록에서 검색어 입력" />
+        </div>
+
+        <div class="sort-toolbar">
+          <span>정렬 기준</span>
+          <button type="button" class="sort-btn active" data-sort-mode="nickname">닉네임</button>
+          <button type="button" class="sort-btn" data-sort-mode="payment">지급방식</button>
+          <button type="button" class="sort-btn" data-sort-mode="date">지급시기</button>
+          <button type="button" class="sort-btn" data-sort-mode="newest">최신순</button>
+        </div>
+
+        <div class="dual-list-grid">
+          <div class="dual-panel">
+            <h2 class="dual-panel-title">세배엽 목록</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="col-done">완료</th>
+                    <th class="col-name">닉네임</th>
+                    <th class="col-category">구분</th>
+                    <th class="col-payment">지급방식</th>
+                    <th class="col-date">지급시기</th>
+                    <th class="col-paid">지급여부</th>
+                    <th class="col-edit">수정</th>
+                  </tr>
+                </thead>
+                <tbody id="combinedSebaeBody"></tbody>
+              </table>
+            </div>
+            <div id="combinedSebaeEmpty" class="empty hidden">
+              세배엽 목록에 추가된 명단이 없습니다.
+            </div>
+          </div>
+
+          <div class="dual-panel">
+            <h2 class="dual-panel-title">4기엽 목록</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="col-done">완료</th>
+                    <th class="col-name">닉네임</th>
+                    <th class="col-category">구분</th>
+                    <th class="col-payment">지급방식</th>
+                    <th class="col-date">지급시기</th>
+                    <th class="col-paid">지급여부</th>
+                    <th class="col-edit">수정</th>
+                  </tr>
+                </thead>
+                <tbody id="combinedFourthBody"></tbody>
+              </table>
+            </div>
+            <div id="combinedFourthEmpty" class="empty hidden">
+              4기엽 목록에 추가된 명단이 없습니다.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="listScreen" class="screen hidden">
       <div class="card wide">
         <div class="top">
@@ -656,6 +802,14 @@
         <div class="toolbar">
           <input id="searchInput" type="text" placeholder="검색어 입력" />
           <button id="addEntryBtn" type="button">명단 추가</button>
+        </div>
+
+        <div class="sort-toolbar">
+          <span>정렬 기준</span>
+          <button type="button" class="sort-btn active" data-sort-mode="nickname">닉네임</button>
+          <button type="button" class="sort-btn" data-sort-mode="payment">지급방식</button>
+          <button type="button" class="sort-btn" data-sort-mode="date">지급시기</button>
+          <button type="button" class="sort-btn" data-sort-mode="newest">최신순</button>
         </div>
 
         <div class="table-wrap">
@@ -752,23 +906,30 @@
     };
 
     const categoryOrder = {
-      "기부": 0,
+      "판매": 0,
       "교환": 1,
-      "판매": 2
+      "기부": 2
     };
+
+    const categoryDisplayOrder = ["판매", "교환", "기부"];
 
     let currentUser = null;
     let currentListType = null;
     let entries = [];
+    let entriesByList = { sebae: [], fourth: [] };
     let unsubscribeList = null;
+    let combinedUnsubscribes = [];
     let editingId = null;
+    let modalListType = null;
     let selectedCategory = "기부";
     let selectedPaymentType = "개인지급";
+    let sortMode = "nickname";
 
     const authScreen = document.getElementById("authScreen");
     const pendingScreen = document.getElementById("pendingScreen");
     const homeScreen = document.getElementById("homeScreen");
     const adminScreen = document.getElementById("adminScreen");
+    const combinedScreen = document.getElementById("combinedScreen");
     const listScreen = document.getElementById("listScreen");
 
     const emailInput = document.getElementById("emailInput");
@@ -784,7 +945,9 @@
 
     const sebaeBtn = document.getElementById("sebaeBtn");
     const fourthBtn = document.getElementById("fourthBtn");
+    const combinedBtn = document.getElementById("combinedBtn");
     const backHomeBtn = document.getElementById("backHomeBtn");
+    const backCombinedHomeBtn = document.getElementById("backCombinedHomeBtn");
     const adminBtn = document.getElementById("adminBtn");
     const backAdminHomeBtn = document.getElementById("backAdminHomeBtn");
     const adminTableBody = document.getElementById("adminTableBody");
@@ -794,6 +957,11 @@
     const addEntryBtn = document.getElementById("addEntryBtn");
     const tableBody = document.getElementById("tableBody");
     const emptyState = document.getElementById("emptyState");
+    const combinedSearchInput = document.getElementById("combinedSearchInput");
+    const combinedSebaeBody = document.getElementById("combinedSebaeBody");
+    const combinedFourthBody = document.getElementById("combinedFourthBody");
+    const combinedSebaeEmpty = document.getElementById("combinedSebaeEmpty");
+    const combinedFourthEmpty = document.getElementById("combinedFourthEmpty");
 
     const modalBackdrop = document.getElementById("modalBackdrop");
     const modalTitle = document.getElementById("modalTitle");
@@ -809,12 +977,14 @@
   pendingScreen.classList.add("hidden");
   homeScreen.classList.add("hidden");
   adminScreen.classList.add("hidden");
+  combinedScreen.classList.add("hidden");
   listScreen.classList.add("hidden");
 
   if (screenName === "auth") authScreen.classList.remove("hidden");
   if (screenName === "pending") pendingScreen.classList.remove("hidden");
   if (screenName === "home") homeScreen.classList.remove("hidden");
   if (screenName === "admin") adminScreen.classList.remove("hidden");
+  if (screenName === "combined") combinedScreen.classList.remove("hidden");
   if (screenName === "list") listScreen.classList.remove("hidden");
 }
 
@@ -890,31 +1060,76 @@
       }
     }
 
-    async function openList(listType) {
-      if (!currentUser) return;
+    function getListRef(listType) {
+      if (!currentUser || !listType) {
+        throw new Error("로그인 또는 목록 선택 상태가 아닙니다.");
+      }
 
-      currentListType = listType;
-      entries = [];
-      searchInput.value = "";
+      return doc(db, "users", currentUser.uid, "lists", listType);
+    }
 
-      listTitle.textContent = listMeta[listType].title;
-      showScreen("list");
-      renderEntries();
+    function getEntriesForList(listType) {
+      if (listType === currentListType) return entries;
+      return entriesByList[listType] || [];
+    }
 
+    async function saveEntriesForList(listType, nextEntries) {
+      const listRef = getListRef(listType);
+
+      await setDoc(
+        listRef,
+        {
+          entries: nextEntries,
+          updatedAt: serverTimestamp()
+        },
+        { merge: true }
+      );
+    }
+
+    function clearSingleSubscription() {
       if (unsubscribeList) {
         unsubscribeList();
         unsubscribeList = null;
       }
+    }
+
+    function clearCombinedSubscriptions() {
+      combinedUnsubscribes.forEach((unsubscribe) => unsubscribe());
+      combinedUnsubscribes = [];
+    }
+
+    function updateSortButtons() {
+      document.querySelectorAll(".sort-btn").forEach((button) => {
+        button.classList.toggle("active", button.dataset.sortMode === sortMode);
+      });
+    }
+
+    async function openList(listType) {
+      if (!currentUser) return;
+
+      clearCombinedSubscriptions();
+      clearSingleSubscription();
+
+      currentListType = listType;
+      modalListType = listType;
+      entries = [];
+      searchInput.value = "";
+
+      listTitle.textContent = listMeta[listType].title;
+      updateSortButtons();
+      showScreen("list");
+      renderEntries();
 
       await ensureListDocumentExists(listType);
 
-      const listRef = getCurrentListRef();
+      const listRef = getListRef(listType);
 
       unsubscribeList = onSnapshot(
         listRef,
         (snapshot) => {
           const data = snapshot.data();
           entries = Array.isArray(data?.entries) ? data.entries : [];
+          entriesByList[listType] = entries;
           renderEntries();
         },
         (error) => {
@@ -924,14 +1139,49 @@
       );
     }
 
+    async function openCombinedScreen() {
+      if (!currentUser) return;
+
+      clearSingleSubscription();
+      clearCombinedSubscriptions();
+
+      currentListType = null;
+      modalListType = null;
+      combinedSearchInput.value = "";
+      entriesByList = { sebae: [], fourth: [] };
+
+      updateSortButtons();
+      showScreen("combined");
+      renderCombinedEntries();
+
+      await ensureListDocumentExists("sebae");
+      await ensureListDocumentExists("fourth");
+
+      ["sebae", "fourth"].forEach((listType) => {
+        const unsubscribe = onSnapshot(
+          getListRef(listType),
+          (snapshot) => {
+            const data = snapshot.data();
+            entriesByList[listType] = Array.isArray(data?.entries) ? data.entries : [];
+            renderCombinedEntries();
+          },
+          (error) => {
+            console.error(error);
+            showToast("목록을 불러오지 못했습니다.");
+          }
+        );
+
+        combinedUnsubscribes.push(unsubscribe);
+      });
+    }
+
     function goHome() {
       currentListType = null;
+      modalListType = null;
       entries = [];
 
-      if (unsubscribeList) {
-        unsubscribeList();
-        unsubscribeList = null;
-      }
+      clearSingleSubscription();
+      clearCombinedSubscriptions();
 
       showScreen("home");
     }
@@ -1117,11 +1367,11 @@
       return result;
     }
 
-    function renderPaidMarks(item) {
-      const marks = normalizePaidMarks(item);
+    function renderPaidMarks(item, listType = currentListType) {
+      const marks = normalizePaidMarks(item, listType);
       return `
         <div class="paid-marks">
-          ${getPaidMarkOptions().map((option) => `
+          ${getPaidMarkOptions(listType).map((option) => `
             <label class="paid-mark">
               <input
                 class="paid-mark-check"
@@ -1143,6 +1393,61 @@
       });
     }
 
+    function comparePaymentType(a, b) {
+      const order = {
+        "개인지급": 0,
+        "길드지급": 1
+      };
+
+      const aValue = getPaymentType(a);
+      const bValue = getPaymentType(b);
+      const aOrder = order[aValue] ?? 99;
+      const bOrder = order[bValue] ?? 99;
+
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return String(aValue).localeCompare(String(bValue), "ko-KR", {
+        sensitivity: "base",
+        numeric: true
+      });
+    }
+
+    function getCreatedAtMs(item) {
+      const value = item?.createdAt;
+
+      if (typeof value === "number") return value;
+      if (typeof value === "string") {
+        const parsed = Date.parse(value);
+        return Number.isNaN(parsed) ? 0 : parsed;
+      }
+      if (value && typeof value.seconds === "number") {
+        return value.seconds * 1000 + Math.floor((value.nanoseconds || 0) / 1000000);
+      }
+
+      return 0;
+    }
+
+    function compareBySortMode(a, b) {
+      if (sortMode === "newest") {
+        const createdCompare = getCreatedAtMs(b) - getCreatedAtMs(a);
+        if (createdCompare !== 0) return createdCompare;
+        return compareNickname(a, b);
+      }
+
+      if (sortMode === "payment") {
+        const paymentCompare = comparePaymentType(a, b);
+        if (paymentCompare !== 0) return paymentCompare;
+        return compareNickname(a, b);
+      }
+
+      if (sortMode === "date") {
+        const dateCompare = parseDateKey(a.date) - parseDateKey(b.date);
+        if (dateCompare !== 0) return dateCompare;
+        return compareNickname(a, b);
+      }
+
+      return compareNickname(a, b);
+    }
+
     function sortEntries(source) {
       return [...source].sort((a, b) => {
         const categoryCompare = categoryOrder[a.category] - categoryOrder[b.category];
@@ -1150,13 +1455,7 @@
 
         if (a.done !== b.done) return a.done ? 1 : -1;
 
-        if (a.category === "판매" && !a.done && !b.done) {
-          const dateCompare = parseDateKey(a.date) - parseDateKey(b.date);
-          if (dateCompare !== 0) return dateCompare;
-          return compareNickname(a, b);
-        }
-
-        return compareNickname(a, b);
+        return compareBySortMode(a, b);
       });
     }
 
@@ -1198,25 +1497,23 @@
       return `${category} 목록 · ${count}명`;
     }
 
-    function renderEntries() {
-      const sorted = sortEntries(entries);
-      const query = searchInput.value.trim();
-
-      tableBody.innerHTML = "";
-      emptyState.classList.toggle("hidden", sorted.length !== 0);
+    function renderEntryRows({ listType, sourceEntries, tableBodyTarget, emptyTarget, query }) {
+      const sorted = sortEntries(sourceEntries);
+      tableBodyTarget.innerHTML = "";
+      emptyTarget.classList.toggle("hidden", sorted.length !== 0);
 
       if (sorted.length === 0) return;
 
       let firstMatchedRow = null;
 
-      ["기부", "교환", "판매"].forEach((category) => {
+      categoryDisplayOrder.forEach((category) => {
         const groupEntries = sorted.filter((item) => item.category === category);
         if (groupEntries.length === 0) return;
 
         const groupRow = document.createElement("tr");
         groupRow.className = "group-row";
         groupRow.innerHTML = `<td colspan="7">${getGroupLabel(category, sorted)}</td>`;
-        tableBody.appendChild(groupRow);
+        tableBodyTarget.appendChild(groupRow);
 
         groupEntries.forEach((item) => {
           const row = document.createElement("tr");
@@ -1240,7 +1537,7 @@
             <td class="col-payment strike-cell">${highlightText(getPaymentType(item), query)}</td>
             <td class="col-date strike-cell">${highlightText(item.date, query)}</td>
             <td class="col-paid">
-              ${renderPaidMarks(item)}
+              ${renderPaidMarks(item, listType)}
             </td>
             <td class="col-edit">
               <button type="button" class="edit-btn">수정</button>
@@ -1248,12 +1545,13 @@
           `;
 
           row.querySelector(".done-check").addEventListener("change", async (event) => {
-            const nextEntries = entries.map((entry) =>
+            const source = getEntriesForList(listType);
+            const nextEntries = source.map((entry) =>
               entry.id === item.id ? { ...entry, done: event.target.checked } : entry
             );
 
             try {
-              await saveCurrentEntries(nextEntries);
+              await saveEntriesForList(listType, nextEntries);
             } catch (error) {
               console.error(error);
               showToast("완료 표시 저장에 실패했습니다.");
@@ -1263,11 +1561,12 @@
           row.querySelectorAll(".paid-mark-check").forEach((checkbox) => {
             checkbox.addEventListener("change", async (event) => {
               const paidKey = event.target.dataset.paidKey;
+              const source = getEntriesForList(listType);
 
-              const nextEntries = entries.map((entry) => {
+              const nextEntries = source.map((entry) => {
                 if (entry.id !== item.id) return entry;
 
-                const currentMarks = normalizePaidMarks(entry);
+                const currentMarks = normalizePaidMarks(entry, listType);
                 return {
                   ...entry,
                   paidMarks: {
@@ -1279,7 +1578,7 @@
               });
 
               try {
-                await saveCurrentEntries(nextEntries);
+                await saveEntriesForList(listType, nextEntries);
               } catch (error) {
                 console.error(error);
                 showToast("지급여부 저장에 실패했습니다.");
@@ -1287,8 +1586,8 @@
             });
           });
 
-          row.querySelector(".edit-btn").addEventListener("click", () => openModal(item));
-          tableBody.appendChild(row);
+          row.querySelector(".edit-btn").addEventListener("click", () => openModal(item, listType));
+          tableBodyTarget.appendChild(row);
 
           if (isMatched && !firstMatchedRow) {
             firstMatchedRow = row;
@@ -1303,7 +1602,38 @@
       }
     }
 
-    function openModal(item = null) {
+    function renderEntries() {
+      renderEntryRows({
+        listType: currentListType,
+        sourceEntries: entries,
+        tableBodyTarget: tableBody,
+        emptyTarget: emptyState,
+        query: searchInput.value.trim()
+      });
+    }
+
+    function renderCombinedEntries() {
+      const query = combinedSearchInput.value.trim();
+
+      renderEntryRows({
+        listType: "sebae",
+        sourceEntries: entriesByList.sebae || [],
+        tableBodyTarget: combinedSebaeBody,
+        emptyTarget: combinedSebaeEmpty,
+        query
+      });
+
+      renderEntryRows({
+        listType: "fourth",
+        sourceEntries: entriesByList.fourth || [],
+        tableBodyTarget: combinedFourthBody,
+        emptyTarget: combinedFourthEmpty,
+        query
+      });
+    }
+
+    function openModal(item = null, listType = currentListType) {
+      modalListType = listType || currentListType;
       editingId = item?.id ?? null;
       modalTitle.textContent = editingId ? "명단 수정" : "명단 추가";
       deleteEntryBtn.classList.toggle("hidden", !editingId);
@@ -1328,6 +1658,7 @@
     function closeModal() {
       modalBackdrop.classList.add("hidden");
       editingId = null;
+      modalListType = null;
       nicknameInput.value = "";
       dateInput.value = "";
       selectedCategory = "기부";
@@ -1343,6 +1674,13 @@
     }
 
     async function saveEntry() {
+      const targetListType = modalListType || currentListType;
+
+      if (!targetListType) {
+        showToast("목록을 먼저 선택해주세요.");
+        return;
+      }
+
       const nickname = nicknameInput.value.trim();
       const date = normalizeDateInput(dateInput.value.trim());
 
@@ -1353,15 +1691,16 @@
       }
 
       if (!isValidDateText(date)) {
-        showToast("지급시기는 4/28 또는 10/03처럼 입력해주세요.");
+        showToast("지급시기는 4/28 또는 10/03, 보류처럼 입력해주세요.");
         dateInput.focus();
         return;
       }
 
+      const sourceEntries = getEntriesForList(targetListType);
       let nextEntries;
 
       if (editingId) {
-        nextEntries = entries.map((entry) => {
+        nextEntries = sourceEntries.map((entry) => {
           if (entry.id !== editingId) return entry;
 
           return {
@@ -1370,13 +1709,13 @@
             category: selectedCategory,
             paymentType: selectedPaymentType,
             date,
-            paidMarks: normalizePaidMarks(entry),
+            paidMarks: normalizePaidMarks(entry, targetListType),
             paid: false
           };
         });
       } else {
         nextEntries = [
-          ...entries,
+          ...sourceEntries,
           {
             id: createId(),
             nickname,
@@ -1385,14 +1724,14 @@
             date,
             done: false,
             paid: false,
-            paidMarks: normalizePaidMarks({}),
+            paidMarks: normalizePaidMarks({}, targetListType),
             createdAt: Date.now()
           }
         ];
       }
 
       try {
-        await saveCurrentEntries(nextEntries);
+        await saveEntriesForList(targetListType, nextEntries);
         closeModal();
         showToast(editingId ? "수정했습니다." : "명단에 추가했습니다.");
       } catch (error) {
@@ -1404,13 +1743,17 @@
     async function deleteEntry() {
       if (!editingId) return;
 
+      const targetListType = modalListType || currentListType;
+      if (!targetListType) return;
+
       const ok = confirm("이 명단을 삭제할까요?");
       if (!ok) return;
 
-      const nextEntries = entries.filter((entry) => entry.id !== editingId);
+      const sourceEntries = getEntriesForList(targetListType);
+      const nextEntries = sourceEntries.filter((entry) => entry.id !== editingId);
 
       try {
-        await saveCurrentEntries(nextEntries);
+        await saveEntriesForList(targetListType, nextEntries);
         closeModal();
         showToast("삭제했습니다.");
       } catch (error) {
@@ -1472,7 +1815,11 @@
 
   if (!user) {
     currentListType = null;
+    modalListType = null;
     entries = [];
+    entriesByList = { sebae: [], fourth: [] };
+    clearSingleSubscription();
+    clearCombinedSubscriptions();
     userEmail.textContent = "";
     if (pendingEmail) pendingEmail.textContent = "";
     adminBtn.classList.add("hidden");
@@ -1507,7 +1854,9 @@
 
     sebaeBtn.addEventListener("click", () => openList("sebae"));
     fourthBtn.addEventListener("click", () => openList("fourth"));
+    combinedBtn.addEventListener("click", openCombinedScreen);
     backHomeBtn.addEventListener("click", goHome);
+    backCombinedHomeBtn.addEventListener("click", goHome);
     adminBtn.addEventListener("click", openAdminScreen);
     backAdminHomeBtn.addEventListener("click", goHome);
 
@@ -1515,6 +1864,19 @@
 
     searchInput.addEventListener("input", () => {
       renderEntries();
+    });
+
+    combinedSearchInput.addEventListener("input", () => {
+      renderCombinedEntries();
+    });
+
+    document.querySelectorAll(".sort-btn").forEach((button) => {
+      button.addEventListener("click", () => {
+        sortMode = button.dataset.sortMode;
+        updateSortButtons();
+        renderEntries();
+        renderCombinedEntries();
+      });
     });
 
     document.querySelectorAll(".seg-btn[data-category]").forEach((button) => {
