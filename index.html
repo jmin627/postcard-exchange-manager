@@ -885,9 +885,9 @@
       <div class="field">
         <label>구분</label>
         <div class="segmented">
-          <button type="button" class="seg-btn active" data-category="기부">기부</button>
+          <button type="button" class="seg-btn active" data-category="판매">판매</button>
           <button type="button" class="seg-btn" data-category="교환">교환</button>
-          <button type="button" class="seg-btn" data-category="판매">판매</button>
+          <button type="button" class="seg-btn" data-category="기부">기부</button>
         </div>
       </div>
 
@@ -956,7 +956,7 @@
     let combinedUnsubscribes = [];
     let editingId = null;
     let modalListType = null;
-    let selectedCategory = "기부";
+    let selectedCategory = "판매";
     let selectedPaymentType = "개인지급";
     let sortMode = "nickname";
     let sortDirection = "asc";
@@ -1694,7 +1694,7 @@
 
       nicknameInput.value = item?.nickname ?? "";
       dateInput.value = item?.date ?? "";
-      selectedCategory = item?.category ?? "기부";
+      selectedCategory = item?.category ?? "판매";
       selectedPaymentType = item?.paymentType ?? "개인지급";
 
       document.querySelectorAll(".seg-btn[data-category]").forEach((button) => {
@@ -1715,7 +1715,7 @@
       modalListType = null;
       nicknameInput.value = "";
       dateInput.value = "";
-      selectedCategory = "기부";
+      selectedCategory = "판매";
       selectedPaymentType = "개인지급";
 
       document.querySelectorAll(".seg-btn[data-category]").forEach((button) => {
