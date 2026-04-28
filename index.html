@@ -408,6 +408,45 @@
       color: var(--primary);
     }
 
+    .checkbox-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .choice-check {
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: var(--soft);
+      color: var(--text);
+      font-weight: 800;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .choice-check input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+    }
+
+    .choice-check:has(input:checked) {
+      background: var(--primary-soft);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .choice-check.disabled {
+      opacity: 0.62;
+      cursor: not-allowed;
+    }
+
     .hint {
       margin: 6px 0 0;
       font-size: 12px;
@@ -884,6 +923,21 @@
         <input id="nicknameInput" type="text" placeholder="닉네임 입력" autocomplete="off" />
       </div>
 
+      <div class="field" id="listTypeField">
+        <label>엽서종류</label>
+        <div class="checkbox-row">
+          <label class="choice-check">
+            <input id="listTypeSebae" type="checkbox" value="sebae" />
+            <span>세배엽</span>
+          </label>
+          <label class="choice-check">
+            <input id="listTypeFourth" type="checkbox" value="fourth" />
+            <span>4기엽</span>
+          </label>
+        </div>
+        <p class="hint">둘 다 체크하면 세배엽 목록과 4기엽 목록에 동시에 추가됩니다.</p>
+      </div>
+
       <div class="field">
         <label>구분</label>
         <div class="segmented">
@@ -1004,6 +1058,9 @@
     const modalBackdrop = document.getElementById("modalBackdrop");
     const modalTitle = document.getElementById("modalTitle");
     const nicknameInput = document.getElementById("nicknameInput");
+    const listTypeField = document.getElementById("listTypeField");
+    const listTypeSebae = document.getElementById("listTypeSebae");
+    const listTypeFourth = document.getElementById("listTypeFourth");
     const dateInput = document.getElementById("dateInput");
     const deleteEntryBtn = document.getElementById("deleteEntryBtn");
     const cancelModalBtn = document.getElementById("cancelModalBtn");
@@ -1109,6 +1166,14 @@
     function getEntriesForList(listType) {
       if (listType === currentListType) return entries;
       return entriesByList[listType] || [];
+    }
+
+    async function loadEntriesForList(listType) {
+      if (listType === currentListType) return entries;
+
+      const snapshot = await getDoc(getListRef(listType));
+      const data = snapshot.data();
+      return Array.isArray(data?.entries) ? data.entries : [];
     }
 
     async function saveEntriesForList(listType, nextEntries) {
@@ -1688,6 +1753,29 @@
       });
     }
 
+    function getSelectedListTypes() {
+      const selected = [];
+      if (listTypeSebae?.checked) selected.push("sebae");
+      if (listTypeFourth?.checked) selected.push("fourth");
+      return selected;
+    }
+
+    function setSelectedListTypes(listTypes) {
+      const set = new Set(listTypes.filter(Boolean));
+      if (listTypeSebae) listTypeSebae.checked = set.has("sebae");
+      if (listTypeFourth) listTypeFourth.checked = set.has("fourth");
+    }
+
+    function setListTypeFieldDisabled(disabled) {
+      [listTypeSebae, listTypeFourth].forEach((input) => {
+        if (input) input.disabled = disabled;
+      });
+
+      document.querySelectorAll(".choice-check").forEach((label) => {
+        label.classList.toggle("disabled", disabled);
+      });
+    }
+
     function openModal(item = null, listType = currentListType) {
       modalListType = listType || currentListType;
       editingId = item?.id ?? null;
@@ -1698,6 +1786,10 @@
       dateInput.value = item?.date ?? "";
       selectedCategory = item?.category ?? "판매";
       selectedPaymentType = item?.paymentType ?? "개인지급";
+
+      const defaultListType = modalListType || currentListType || "sebae";
+      setSelectedListTypes(editingId ? [defaultListType] : [defaultListType]);
+      setListTypeFieldDisabled(Boolean(editingId));
 
       document.querySelectorAll(".seg-btn[data-category]").forEach((button) => {
         button.classList.toggle("active", button.dataset.category === selectedCategory);
@@ -1719,9 +1811,11 @@
       dateInput.value = "";
       selectedCategory = "판매";
       selectedPaymentType = "개인지급";
+      setSelectedListTypes([]);
+      setListTypeFieldDisabled(false);
 
       document.querySelectorAll(".seg-btn[data-category]").forEach((button) => {
-        button.classList.toggle("active", button.dataset.category === "기부");
+        button.classList.toggle("active", button.dataset.category === "판매");
       });
 
       document.querySelectorAll(".payment-btn").forEach((button) => {
@@ -1731,8 +1825,16 @@
 
     async function saveEntry() {
       const targetListType = modalListType || currentListType;
+      const selectedListTypes = editingId
+        ? [targetListType]
+        : getSelectedListTypes();
 
-      if (!targetListType) {
+      if (!editingId && selectedListTypes.length === 0) {
+        showToast("엽서종류를 하나 이상 선택해주세요.");
+        return;
+      }
+
+      if (editingId && !targetListType) {
         showToast("목록을 먼저 선택해주세요.");
         return;
       }
@@ -1752,44 +1854,54 @@
         return;
       }
 
-      const sourceEntries = getEntriesForList(targetListType);
-      let nextEntries;
-
-      if (editingId) {
-        nextEntries = sourceEntries.map((entry) => {
-          if (entry.id !== editingId) return entry;
-
-          return {
-            ...entry,
-            nickname,
-            category: selectedCategory,
-            paymentType: selectedPaymentType,
-            date,
-            paidMarks: normalizePaidMarks(entry, targetListType),
-            paid: false
-          };
-        });
-      } else {
-        nextEntries = [
-          ...sourceEntries,
-          {
-            id: createId(),
-            nickname,
-            category: selectedCategory,
-            paymentType: selectedPaymentType,
-            date,
-            done: false,
-            paid: false,
-            paidMarks: normalizePaidMarks({}, targetListType),
-            createdAt: Date.now()
-          }
-        ];
-      }
-
       try {
-        await saveEntriesForList(targetListType, nextEntries);
+        if (editingId) {
+          const sourceEntries = await loadEntriesForList(targetListType);
+
+          const nextEntries = sourceEntries.map((entry) => {
+            if (entry.id !== editingId) return entry;
+
+            return {
+              ...entry,
+              nickname,
+              category: selectedCategory,
+              paymentType: selectedPaymentType,
+              date,
+              paidMarks: normalizePaidMarks(entry, targetListType),
+              paid: false
+            };
+          });
+
+          await saveEntriesForList(targetListType, nextEntries);
+          closeModal();
+          showToast("수정했습니다.");
+          return;
+        }
+
+        await Promise.all(
+          selectedListTypes.map(async (listType) => {
+            const sourceEntries = await loadEntriesForList(listType);
+            const nextEntries = [
+              ...sourceEntries,
+              {
+                id: createId(),
+                nickname,
+                category: selectedCategory,
+                paymentType: selectedPaymentType,
+                date,
+                done: false,
+                paid: false,
+                paidMarks: normalizePaidMarks({}, listType),
+                createdAt: Date.now()
+              }
+            ];
+
+            await saveEntriesForList(listType, nextEntries);
+          })
+        );
+
         closeModal();
-        showToast(editingId ? "수정했습니다." : "명단에 추가했습니다.");
+        showToast(selectedListTypes.length > 1 ? "두 목록에 동시에 추가했습니다." : "명단에 추가했습니다.");
       } catch (error) {
         console.error(error);
         showToast("저장에 실패했습니다.");
