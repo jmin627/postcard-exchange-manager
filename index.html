@@ -643,10 +643,10 @@
     const toast = document.getElementById("toast");
 
     function showScreen(screenName) {
-  authScreen.classList.add("hidden");
-  pendingScreen.classList.add("hidden");
-  homeScreen.classList.add("hidden");
-  listScreen.classList.add("hidden");
+      authScreen.classList.add("hidden");
+      pendingScreen.classList.add("hidden");
+      homeScreen.classList.add("hidden");
+      listScreen.classList.add("hidden");
 
   if (screenName === "auth") authScreen.classList.remove("hidden");
   if (screenName === "pending") pendingScreen.classList.remove("hidden");
