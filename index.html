@@ -494,6 +494,27 @@
       font-size: 14px;
       color: var(--muted);
     }
+    .admin-area {
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+}
+
+.approved-text {
+  color: #26a269;
+  font-weight: 900;
+}
+
+.pending-text {
+  color: #e05252;
+  font-weight: 900;
+}
+
+.admin-approve-btn {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+}
   </style>
 </head>
 
@@ -559,8 +580,38 @@
           <button id="sebaeBtn" type="button" class="big-btn">세배엽 목록</button>
           <button id="fourthBtn" type="button" class="big-btn">4기엽 목록</button>
         </div>
+
+        <div class="admin-area">
+          <button id="adminBtn" type="button" class="small-btn hidden">승인 관리</button>
       </div>
-    </section>
+    </div>
+  </section>
+
+    <section id="adminScreen" class="screen hidden">
+  <div class="card wide">
+    <div class="top">
+      <div>
+        <h1>승인 관리</h1>
+        <p>회원가입한 사용자들을 확인하고 승인할 수 있습니다.</p>
+      </div>
+      <button id="backAdminHomeBtn" type="button" class="small-btn">처음으로</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>이메일</th>
+            <th>승인 상태</th>
+            <th>역할</th>
+            <th>관리</th>
+          </tr>
+        </thead>
+        <tbody id="adminTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
     <section id="listScreen" class="screen hidden">
       <div class="card wide">
         <div class="top">
@@ -646,13 +697,15 @@
     } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 
     import {
-      doc,
-      getDoc,
-      setDoc,
-      onSnapshot,
-      serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
-
+  doc,
+  getDoc,
+  setDoc,
+  onSnapshot,
+  serverTimestamp,
+  collection,
+  getDocs,
+  updateDoc
+} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
     const listMeta = {
       sebae: { title: "세배엽 목록" },
       fourth: { title: "4기엽 목록" }
@@ -674,6 +727,7 @@
     const authScreen = document.getElementById("authScreen");
     const pendingScreen = document.getElementById("pendingScreen");
     const homeScreen = document.getElementById("homeScreen");
+    const adminScreen = document.getElementById("adminScreen");
     const listScreen = document.getElementById("listScreen");
 
     const emailInput = document.getElementById("emailInput");
@@ -690,6 +744,9 @@
     const sebaeBtn = document.getElementById("sebaeBtn");
     const fourthBtn = document.getElementById("fourthBtn");
     const backHomeBtn = document.getElementById("backHomeBtn");
+    const adminBtn = document.getElementById("adminBtn");
+    const backAdminHomeBtn = document.getElementById("backAdminHomeBtn");
+    const adminTableBody = document.getElementById("adminTableBody");
 
     const listTitle = document.getElementById("listTitle");
     const searchInput = document.getElementById("searchInput");
@@ -707,14 +764,16 @@
     const toast = document.getElementById("toast");
 
     function showScreen(screenName) {
-      authScreen.classList.add("hidden");
-      pendingScreen.classList.add("hidden");
-      homeScreen.classList.add("hidden");
-      listScreen.classList.add("hidden");
+  authScreen.classList.add("hidden");
+  pendingScreen.classList.add("hidden");
+  homeScreen.classList.add("hidden");
+  adminScreen.classList.add("hidden");
+  listScreen.classList.add("hidden");
 
   if (screenName === "auth") authScreen.classList.remove("hidden");
   if (screenName === "pending") pendingScreen.classList.remove("hidden");
   if (screenName === "home") homeScreen.classList.remove("hidden");
+  if (screenName === "admin") adminScreen.classList.remove("hidden");
   if (screenName === "list") listScreen.classList.remove("hidden");
 }
 
@@ -835,6 +894,90 @@
 
       showScreen("home");
     }
+    async function openAdminScreen() {
+  if (!currentUser) return;
+
+  showScreen("admin");
+  adminTableBody.innerHTML = `
+    <tr>
+      <td colspan="4">사용자 목록을 불러오는 중입니다...</td>
+    </tr>
+  `;
+
+  try {
+    const usersSnapshot = await getDocs(collection(db, "users"));
+    const users = [];
+
+    usersSnapshot.forEach((docSnap) => {
+      users.push({
+        uid: docSnap.id,
+        ...docSnap.data()
+      });
+    });
+
+    users.sort((a, b) => String(a.email).localeCompare(String(b.email)));
+
+    if (users.length === 0) {
+      adminTableBody.innerHTML = `
+        <tr>
+          <td colspan="4">가입자가 없습니다.</td>
+        </tr>
+      `;
+      return;
+    }
+
+    adminTableBody.innerHTML = "";
+
+    users.forEach((user) => {
+      const tr = document.createElement("tr");
+
+      const approvedText = user.approved === true
+        ? `<span class="approved-text">승인됨</span>`
+        : `<span class="pending-text">대기중</span>`;
+
+      const actionButton = user.approved === true
+        ? `-`
+        : `<button type="button" class="admin-approve-btn" data-uid="${user.uid}">승인</button>`;
+
+      tr.innerHTML = `
+        <td>${escapeHtml(user.email || "")}</td>
+        <td>${approvedText}</td>
+        <td>${escapeHtml(user.role || "user")}</td>
+        <td>${actionButton}</td>
+      `;
+
+      adminTableBody.appendChild(tr);
+    });
+
+    document.querySelectorAll(".admin-approve-btn").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const uid = button.dataset.uid;
+        const ok = confirm("이 사용자를 승인할까요?");
+        if (!ok) return;
+
+        try {
+          await updateDoc(doc(db, "users", uid), {
+            approved: true
+          });
+
+          showToast("승인했습니다.");
+          openAdminScreen();
+        } catch (error) {
+          console.error(error);
+          showToast("승인에 실패했습니다.");
+        }
+      });
+    });
+
+  } catch (error) {
+    console.error(error);
+    adminTableBody.innerHTML = `
+      <tr>
+        <td colspan="4">사용자 목록을 불러오지 못했습니다.</td>
+      </tr>
+    `;
+  }
+}
 
     function createId() {
       if (crypto?.randomUUID) return crypto.randomUUID();
@@ -1194,6 +1337,7 @@
     entries = [];
     userEmail.textContent = "";
     if (pendingEmail) pendingEmail.textContent = "";
+    adminBtn.classList.add("hidden");
     showScreen("auth");
     return;
   }
@@ -1202,9 +1346,17 @@
     const profile = await ensureUserProfile(user);
 
     if (profile.approved === true) {
-      userEmail.textContent = `${user.email} 계정으로 로그인 중`;
-      showScreen("home");
-    } else {
+  userEmail.textContent = `${user.email} 계정으로 로그인 중`;
+
+  if (profile.role === "admin") {
+    adminBtn.classList.remove("hidden");
+  } else {
+    adminBtn.classList.add("hidden");
+  }
+
+  showScreen("home");
+  } 
+    else {
       pendingEmail.textContent = `${user.email} 계정은 현재 승인 대기 중입니다.`;
       showScreen("pending");
     }
@@ -1218,6 +1370,8 @@
     sebaeBtn.addEventListener("click", () => openList("sebae"));
     fourthBtn.addEventListener("click", () => openList("fourth"));
     backHomeBtn.addEventListener("click", goHome);
+    adminBtn.addEventListener("click", openAdminScreen);
+    backAdminHomeBtn.addEventListener("click", goHome);
 
     addEntryBtn.addEventListener("click", () => openModal());
 
