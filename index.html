@@ -47,7 +47,7 @@
     }
 
     .app {
-      width: min(1600px, calc(100% - 32px));
+      width: min(1800px, calc(100% - 16px));
       margin: 32px auto;
     }
 
@@ -578,13 +578,15 @@
       color: var(--primary);
     }
 
-    .combined-card {
-      width: min(1600px, 100%);
+    #combinedScreen {
+      width: min(1800px, calc(100vw - 24px));
+      justify-self: center;
     }
 
-    #combinedScreen {
-      width: min(1600px, calc(100vw - 32px));
-      justify-self: center;
+    #combinedScreen .combined-card,
+    .card.wide.combined-card {
+      width: min(1800px, calc(100vw - 24px));
+      max-width: none;
     }
 
     .dual-list-grid {
