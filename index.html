@@ -186,7 +186,7 @@
 
     table {
       width: 100%;
-      min-width: 760px;
+      min-width: 900px;
       border-collapse: collapse;
       table-layout: fixed;
       background: #fff;
@@ -231,15 +231,19 @@
     }
 
     .col-category {
+      width: 110px;
+    }
+
+    .col-payment {
       width: 120px;
     }
 
     .col-date {
-      width: 130px;
+      width: 120px;
     }
 
     .col-paid {
-      width: 120px;
+      width: 190px;
     }
 
     .col-edit {
@@ -277,6 +281,33 @@
 
     .paid-check {
       accent-color: #26a269;
+    }
+
+    .paid-marks {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .paid-mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 7px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .paid-mark input {
+      width: 16px;
+      height: 16px;
+      accent-color: #26a269;
+      cursor: pointer;
     }
 
     .done-row {
@@ -634,6 +665,7 @@
                 <th class="col-done">완료</th>
                 <th class="col-name">닉네임</th>
                 <th class="col-category">구분</th>
+                <th class="col-payment">지급방식</th>
                 <th class="col-date">지급시기</th>
                 <th class="col-paid">지급여부</th>
                 <th class="col-edit">수정</th>
@@ -671,9 +703,17 @@
       </div>
 
       <div class="field">
+        <label>지급방식</label>
+        <div class="segmented">
+          <button type="button" class="payment-btn seg-btn active" data-payment-type="개인지급">개인지급</button>
+          <button type="button" class="payment-btn seg-btn" data-payment-type="길드지급">길드지급</button>
+        </div>
+      </div>
+
+      <div class="field">
         <label for="dateInput">지급시기</label>
-        <input id="dateInput" type="text" placeholder="0/00" maxlength="5" autocomplete="off" />
-        <p class="hint">예: 4/28, 10/03 형식으로 입력하세요.</p>
+        <input id="dateInput" type="text" placeholder="비우면 오늘 날짜, 또는 보류" maxlength="5" autocomplete="off" />
+        <p class="hint">예: 4/28, 10/03, 보류. 비워두면 오늘 날짜로 저장됩니다.</p>
       </div>
 
       <div class="modal-actions">
@@ -723,6 +763,7 @@
     let unsubscribeList = null;
     let editingId = null;
     let selectedCategory = "기부";
+    let selectedPaymentType = "개인지급";
 
     const authScreen = document.getElementById("authScreen");
     const pendingScreen = document.getElementById("pendingScreen");
@@ -984,8 +1025,20 @@
       return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     }
 
+    function getTodayDateText() {
+      const today = new Date();
+      const month = today.getMonth() + 1;
+      const day = String(today.getDate()).padStart(2, "0");
+      return `${month}/${day}`;
+    }
+
     function normalizeDateInput(value) {
-      const clean = value.replace(/[^0-9/]/g, "");
+      const raw = String(value || "").trim();
+
+      if (!raw) return getTodayDateText();
+      if (raw === "보류") return "보류";
+
+      const clean = raw.replace(/[^0-9/]/g, "");
 
       if (clean.includes("/")) {
         const [rawMonth, rawDay] = clean.split("/");
@@ -1008,6 +1061,8 @@
     }
 
     function isValidDateText(value) {
+      if (value === "보류") return true;
+
       const match = value.match(/^(\d{1,2})\/(\d{2})$/);
       if (!match) return false;
 
@@ -1018,10 +1073,67 @@
     }
 
     function parseDateKey(value) {
+      if (String(value) === "보류") return 9998;
+
       const match = String(value).match(/^(\d{1,2})\/(\d{2})$/);
       if (!match) return 9999;
 
       return Number(match[1]) * 100 + Number(match[2]);
+    }
+
+    function getPaymentType(item) {
+      return item.paymentType || "개인지급";
+    }
+
+    function getPaidMarkOptions(listType = currentListType) {
+      if (listType === "fourth") {
+        return [
+          { key: "kkam1", label: "깜" },
+          { key: "kkam2", label: "깜" },
+          { key: "ju", label: "주" }
+        ];
+      }
+
+      return [
+        { key: "kkam1", label: "깜" },
+        { key: "ju", label: "주" }
+      ];
+    }
+
+    function normalizePaidMarks(item, listType = currentListType) {
+      const marks = item?.paidMarks && typeof item.paidMarks === "object"
+        ? item.paidMarks
+        : {};
+
+      const result = {};
+      getPaidMarkOptions(listType).forEach((option) => {
+        result[option.key] = Boolean(marks[option.key]);
+      });
+
+      if (item?.paid === true && "ju" in result) {
+        result.ju = true;
+      }
+
+      return result;
+    }
+
+    function renderPaidMarks(item) {
+      const marks = normalizePaidMarks(item);
+      return `
+        <div class="paid-marks">
+          ${getPaidMarkOptions().map((option) => `
+            <label class="paid-mark">
+              <input
+                class="paid-mark-check"
+                type="checkbox"
+                data-paid-key="${option.key}"
+                ${marks[option.key] ? "checked" : ""}
+              />
+              <span>${option.label}</span>
+            </label>
+          `).join("")}
+        </div>
+      `;
     }
 
     function compareNickname(a, b) {
@@ -1077,7 +1189,7 @@
     function rowMatchesQuery(item, query) {
       if (!query) return false;
 
-      const text = `${item.nickname} ${item.category} ${item.date}`.toLowerCase();
+      const text = `${item.nickname} ${item.category} ${getPaymentType(item)} ${item.date}`.toLowerCase();
       return text.includes(query.toLowerCase());
     }
 
@@ -1103,7 +1215,7 @@
 
         const groupRow = document.createElement("tr");
         groupRow.className = "group-row";
-        groupRow.innerHTML = `<td colspan="6">${getGroupLabel(category, sorted)}</td>`;
+        groupRow.innerHTML = `<td colspan="7">${getGroupLabel(category, sorted)}</td>`;
         tableBody.appendChild(groupRow);
 
         groupEntries.forEach((item) => {
@@ -1125,9 +1237,10 @@
             </td>
             <td class="col-name strike-cell">${highlightText(item.nickname, query)}</td>
             <td class="col-category strike-cell"><span class="type-badge">${highlightText(item.category, query)}</span></td>
+            <td class="col-payment strike-cell">${highlightText(getPaymentType(item), query)}</td>
             <td class="col-date strike-cell">${highlightText(item.date, query)}</td>
             <td class="col-paid">
-              ${item.category === "판매" ? `<input class="check paid-check" type="checkbox" ${item.paid ? "checked" : ""} aria-label="지급여부 표시" />` : ""}
+              ${renderPaidMarks(item)}
             </td>
             <td class="col-edit">
               <button type="button" class="edit-btn">수정</button>
@@ -1147,12 +1260,23 @@
             }
           });
 
-          const paidCheck = row.querySelector(".paid-check");
-          if (paidCheck) {
-            paidCheck.addEventListener("change", async (event) => {
-              const nextEntries = entries.map((entry) =>
-                entry.id === item.id ? { ...entry, paid: event.target.checked } : entry
-              );
+          row.querySelectorAll(".paid-mark-check").forEach((checkbox) => {
+            checkbox.addEventListener("change", async (event) => {
+              const paidKey = event.target.dataset.paidKey;
+
+              const nextEntries = entries.map((entry) => {
+                if (entry.id !== item.id) return entry;
+
+                const currentMarks = normalizePaidMarks(entry);
+                return {
+                  ...entry,
+                  paidMarks: {
+                    ...currentMarks,
+                    [paidKey]: event.target.checked
+                  },
+                  paid: false
+                };
+              });
 
               try {
                 await saveCurrentEntries(nextEntries);
@@ -1161,7 +1285,7 @@
                 showToast("지급여부 저장에 실패했습니다.");
               }
             });
-          }
+          });
 
           row.querySelector(".edit-btn").addEventListener("click", () => openModal(item));
           tableBody.appendChild(row);
@@ -1187,9 +1311,14 @@
       nicknameInput.value = item?.nickname ?? "";
       dateInput.value = item?.date ?? "";
       selectedCategory = item?.category ?? "기부";
+      selectedPaymentType = item?.paymentType ?? "개인지급";
 
-      document.querySelectorAll(".seg-btn").forEach((button) => {
+      document.querySelectorAll(".seg-btn[data-category]").forEach((button) => {
         button.classList.toggle("active", button.dataset.category === selectedCategory);
+      });
+
+      document.querySelectorAll(".payment-btn").forEach((button) => {
+        button.classList.toggle("active", button.dataset.paymentType === selectedPaymentType);
       });
 
       modalBackdrop.classList.remove("hidden");
@@ -1202,9 +1331,14 @@
       nicknameInput.value = "";
       dateInput.value = "";
       selectedCategory = "기부";
+      selectedPaymentType = "개인지급";
 
-      document.querySelectorAll(".seg-btn").forEach((button) => {
+      document.querySelectorAll(".seg-btn[data-category]").forEach((button) => {
         button.classList.toggle("active", button.dataset.category === "기부");
+      });
+
+      document.querySelectorAll(".payment-btn").forEach((button) => {
+        button.classList.toggle("active", button.dataset.paymentType === "개인지급");
       });
     }
 
@@ -1234,8 +1368,10 @@
             ...entry,
             nickname,
             category: selectedCategory,
+            paymentType: selectedPaymentType,
             date,
-            paid: selectedCategory === "판매" ? Boolean(entry.paid) : false
+            paidMarks: normalizePaidMarks(entry),
+            paid: false
           };
         });
       } else {
@@ -1245,9 +1381,11 @@
             id: createId(),
             nickname,
             category: selectedCategory,
+            paymentType: selectedPaymentType,
             date,
             done: false,
             paid: false,
+            paidMarks: normalizePaidMarks({}),
             createdAt: Date.now()
           }
         ];
@@ -1379,18 +1517,28 @@
       renderEntries();
     });
 
-    document.querySelectorAll(".seg-btn").forEach((button) => {
+    document.querySelectorAll(".seg-btn[data-category]").forEach((button) => {
       button.addEventListener("click", () => {
         selectedCategory = button.dataset.category;
 
-        document.querySelectorAll(".seg-btn").forEach((target) => {
+        document.querySelectorAll(".seg-btn[data-category]").forEach((target) => {
           target.classList.toggle("active", target.dataset.category === selectedCategory);
         });
       });
     });
 
+    document.querySelectorAll(".payment-btn").forEach((button) => {
+      button.addEventListener("click", () => {
+        selectedPaymentType = button.dataset.paymentType;
+
+        document.querySelectorAll(".payment-btn").forEach((target) => {
+          target.classList.toggle("active", target.dataset.paymentType === selectedPaymentType);
+        });
+      });
+    });
+
     dateInput.addEventListener("input", () => {
-      dateInput.value = dateInput.value.replace(/[^0-9/]/g, "").slice(0, 5);
+      dateInput.value = dateInput.value.slice(0, 5);
     });
 
     dateInput.addEventListener("blur", () => {
