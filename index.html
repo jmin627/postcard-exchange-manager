@@ -2,11 +2,86 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>엽서 교환 목록 정리</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-  <h1>엽서 교환 목록 정리 프로그램</h1>
+  <main class="app">
+
+    <!-- 1. 로그인 전 화면 -->
+    <section id="authScreen" class="screen">
+      <div class="card">
+        <h1>엽서 교환 목록 정리</h1>
+        <p>회원가입 또는 로그인 후 사용할 수 있습니다.</p>
+
+        <input id="emailInput" type="email" placeholder="이메일" />
+        <input id="passwordInput" type="password" placeholder="비밀번호" />
+
+        <div class="button-row">
+          <button id="signupBtn">회원가입</button>
+          <button id="loginBtn">로그인</button>
+        </div>
+
+        <p id="authMessage" class="message"></p>
+      </div>
+    </section>
+
+    <!-- 2. 로그인 후 메인 화면 -->
+    <section id="homeScreen" class="screen hidden">
+      <div class="card">
+        <div class="top">
+          <div>
+            <h1>엽서 교환 목록 정리</h1>
+            <p id="userEmail"></p>
+          </div>
+          <button id="logoutBtn" class="small-btn">로그아웃</button>
+        </div>
+
+        <div class="big-buttons">
+          <button id="sebaeBtn" class="big-btn">세배엽 목록</button>
+          <button id="fourthBtn" class="big-btn">4기엽 목록</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. 목록 화면 -->
+    <section id="listScreen" class="screen hidden">
+      <div class="card wide">
+        <div class="top">
+          <div>
+            <h1 id="listTitle">세배엽 목록</h1>
+            <p>명단을 추가하고 정리할 수 있습니다.</p>
+          </div>
+          <button id="backHomeBtn" class="small-btn">처음으로</button>
+        </div>
+
+        <div class="toolbar">
+          <input id="searchInput" type="text" placeholder="검색어 입력" />
+          <button id="addEntryBtn">명단 추가</button>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>완료</th>
+              <th>닉네임</th>
+              <th>구분</th>
+              <th>지급시기</th>
+              <th>지급여부</th>
+              <th>수정</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr>
+              <td colspan="6">아직 명단 기능은 연결 전입니다.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
 
   <script type="module" src="./app.js"></script>
 </body>
