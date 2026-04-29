@@ -617,6 +617,33 @@
       font-size: 13px;
       font-weight: 700;
       line-height: 1.55;
+      white-space: pre-wrap;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 12px 14px;
+      border: 1px solid #cfd3df;
+      border-radius: 14px;
+      background: #fff;
+      outline: none;
+      resize: vertical;
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px var(--primary-soft);
+    }
+
+    .notice-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
     }
     .admin-area {
   margin-top: 18px;
@@ -883,7 +910,7 @@
 
         <div class="notice-box">
           <strong>공지</strong>
-          <p>회원가입 후 관리자 승인까지 시간이 걸릴 수 있습니다. 승인 전에는 목록을 이용할 수 없습니다.</p>
+          <p id="authNoticeText">회원가입 후 관리자 승인까지 시간이 걸릴 수 있습니다. 승인 전에는 목록을 이용할 수 없습니다.</p>
         </div>
 
         <label class="field-label" for="emailInput">이메일</label>
@@ -938,7 +965,7 @@
 
         <div class="notice-box">
           <strong>공지</strong>
-          <p>명단 추가 시 개인지급/길드지급과 엽서종류를 확인해주세요. 관리자가 추가한 공통 길드지급 항목은 모든 승인 사용자에게 표시됩니다.</p>
+          <p id="homeNoticeText">명단 추가 시 개인지급/길드지급과 엽서종류를 확인해주세요. 관리자가 추가한 공통 길드지급 항목은 모든 승인 사용자에게 표시됩니다.</p>
         </div>
 
         <div class="big-buttons home-buttons">
@@ -949,10 +976,37 @@
 
         <div class="admin-area">
           <button id="adminBtn" type="button" class="small-btn hidden">승인 관리</button>
+          <button id="noticeAdminBtn" type="button" class="small-btn hidden">공지 수정</button>
           <button id="trashBtn" type="button" class="small-btn">휴지통</button>
       </div>
     </div>
   </section>
+
+    <section id="noticeScreen" class="screen hidden">
+      <div class="card wide">
+        <div class="top">
+          <div>
+            <h1>공지 수정</h1>
+            <p>로그인 화면과 메인 화면에 보이는 공지를 수정할 수 있습니다.</p>
+          </div>
+          <button id="backNoticeHomeBtn" type="button" class="small-btn">처음으로</button>
+        </div>
+
+        <div class="field">
+          <label for="authNoticeInput">로그인/회원가입 화면 공지</label>
+          <textarea id="authNoticeInput" placeholder="로그인 화면에 보일 공지를 입력하세요."></textarea>
+        </div>
+
+        <div class="field">
+          <label for="homeNoticeInput">메인 화면 공지</label>
+          <textarea id="homeNoticeInput" placeholder="메인 화면에 보일 공지를 입력하세요."></textarea>
+        </div>
+
+        <div class="notice-actions">
+          <button id="saveNoticeBtn" type="button">공지 저장</button>
+        </div>
+      </div>
+    </section>
 
     <section id="adminScreen" class="screen hidden">
   <div class="card wide">
@@ -1289,6 +1343,7 @@
     const pendingScreen = document.getElementById("pendingScreen");
     const homeScreen = document.getElementById("homeScreen");
     const adminScreen = document.getElementById("adminScreen");
+    const noticeScreen = document.getElementById("noticeScreen");
     const trashScreen = document.getElementById("trashScreen");
     const combinedScreen = document.getElementById("combinedScreen");
     const listScreen = document.getElementById("listScreen");
@@ -1310,9 +1365,11 @@
     const backHomeBtn = document.getElementById("backHomeBtn");
     const backCombinedHomeBtn = document.getElementById("backCombinedHomeBtn");
     const adminBtn = document.getElementById("adminBtn");
+    const noticeAdminBtn = document.getElementById("noticeAdminBtn");
     const trashBtn = document.getElementById("trashBtn");
     const backAdminHomeBtn = document.getElementById("backAdminHomeBtn");
     const backTrashHomeBtn = document.getElementById("backTrashHomeBtn");
+    const backNoticeHomeBtn = document.getElementById("backNoticeHomeBtn");
     const adminTableBody = document.getElementById("adminTableBody");
     const trashTableBody = document.getElementById("trashTableBody");
 
@@ -1350,11 +1407,18 @@
     const saveEntryBtn = document.getElementById("saveEntryBtn");
     const toast = document.getElementById("toast");
 
+    const authNoticeText = document.getElementById("authNoticeText");
+    const homeNoticeText = document.getElementById("homeNoticeText");
+    const authNoticeInput = document.getElementById("authNoticeInput");
+    const homeNoticeInput = document.getElementById("homeNoticeInput");
+    const saveNoticeBtn = document.getElementById("saveNoticeBtn");
+
     function showScreen(screenName) {
   authScreen.classList.add("hidden");
   pendingScreen.classList.add("hidden");
   homeScreen.classList.add("hidden");
   adminScreen.classList.add("hidden");
+  noticeScreen.classList.add("hidden");
   trashScreen.classList.add("hidden");
   combinedScreen.classList.add("hidden");
   listScreen.classList.add("hidden");
@@ -1363,6 +1427,7 @@
   if (screenName === "pending") pendingScreen.classList.remove("hidden");
   if (screenName === "home") homeScreen.classList.remove("hidden");
   if (screenName === "admin") adminScreen.classList.remove("hidden");
+  if (screenName === "notice") noticeScreen.classList.remove("hidden");
   if (screenName === "trash") trashScreen.classList.remove("hidden");
   if (screenName === "combined") combinedScreen.classList.remove("hidden");
   if (screenName === "list") listScreen.classList.remove("hidden");
@@ -1380,6 +1445,80 @@
       showToast.timer = setTimeout(() => {
         toast.classList.add("hidden");
       }, 1800);
+    }
+
+    const DEFAULT_AUTH_NOTICE = "회원가입 후 관리자 승인까지 시간이 걸릴 수 있습니다. 승인 전에는 목록을 이용할 수 없습니다.";
+    const DEFAULT_HOME_NOTICE = "명단 추가 시 개인지급/길드지급과 엽서종류를 확인해주세요. 관리자가 추가한 공통 길드지급 항목은 모든 승인 사용자에게 표시됩니다.";
+
+    function getNoticeRef() {
+      return doc(db, "settings", "notices");
+    }
+
+    function applyNoticeText(notices = {}) {
+      const authNotice = notices.authNotice || DEFAULT_AUTH_NOTICE;
+      const homeNotice = notices.homeNotice || DEFAULT_HOME_NOTICE;
+
+      if (authNoticeText) authNoticeText.textContent = authNotice;
+      if (homeNoticeText) homeNoticeText.textContent = homeNotice;
+
+      if (authNoticeInput) authNoticeInput.value = authNotice;
+      if (homeNoticeInput) homeNoticeInput.value = homeNotice;
+    }
+
+    async function loadNoticeSettings() {
+      try {
+        const snapshot = await getDoc(getNoticeRef());
+
+        if (snapshot.exists()) {
+          applyNoticeText(snapshot.data());
+        } else {
+          applyNoticeText();
+        }
+      } catch (error) {
+        console.error(error);
+        applyNoticeText();
+      }
+    }
+
+    async function openNoticeScreen() {
+      if (currentProfile?.role !== "admin") {
+        showToast("관리자만 공지를 수정할 수 있습니다.");
+        return;
+      }
+
+      await loadNoticeSettings();
+      showScreen("notice");
+    }
+
+    async function saveNoticeSettings() {
+      if (currentProfile?.role !== "admin") {
+        showToast("관리자만 공지를 수정할 수 있습니다.");
+        return;
+      }
+
+      const authNotice = authNoticeInput.value.trim() || DEFAULT_AUTH_NOTICE;
+      const homeNotice = homeNoticeInput.value.trim() || DEFAULT_HOME_NOTICE;
+
+      try {
+        await setDoc(
+          getNoticeRef(),
+          {
+            authNotice,
+            homeNotice,
+            updatedAt: serverTimestamp(),
+            updatedBy: currentUser?.uid || "",
+            updatedByEmail: currentUser?.email || ""
+          },
+          { merge: true }
+        );
+
+        applyNoticeText({ authNotice, homeNotice });
+        showToast("공지를 저장했습니다.");
+        showScreen("home");
+      } catch (error) {
+        console.error(error);
+        showToast("공지 저장에 실패했습니다.");
+      }
     }
 
     async function ensureUserProfile(user) {
@@ -3088,6 +3227,8 @@
       }
     }
 
+    loadNoticeSettings();
+
     signupBtn.addEventListener("click", async () => {
       const email = emailInput.value.trim();
       const password = passwordInput.value.trim();
@@ -3150,6 +3291,7 @@
     userEmail.textContent = "";
     if (pendingEmail) pendingEmail.textContent = "";
     adminBtn.classList.add("hidden");
+    noticeAdminBtn.classList.add("hidden");
     showScreen("auth");
     return;
   }
@@ -3163,8 +3305,10 @@
 
   if (profile.role === "admin") {
     adminBtn.classList.remove("hidden");
+    noticeAdminBtn.classList.remove("hidden");
   } else {
     adminBtn.classList.add("hidden");
+    noticeAdminBtn.classList.add("hidden");
   }
 
   showScreen("home");
@@ -3186,9 +3330,12 @@
     backHomeBtn.addEventListener("click", goHome);
     backCombinedHomeBtn.addEventListener("click", goHome);
     adminBtn.addEventListener("click", openAdminScreen);
+    noticeAdminBtn.addEventListener("click", openNoticeScreen);
     trashBtn.addEventListener("click", openTrashScreen);
     backAdminHomeBtn.addEventListener("click", goHome);
     backTrashHomeBtn.addEventListener("click", goHome);
+    backNoticeHomeBtn.addEventListener("click", goHome);
+    saveNoticeBtn.addEventListener("click", saveNoticeSettings);
 
     addEntryBtn.addEventListener("click", () => openModal());
 
