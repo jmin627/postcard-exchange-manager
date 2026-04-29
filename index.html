@@ -2207,6 +2207,16 @@
       return result;
     }
 
+    function getAllPaidMarksChecked(listType = currentListType) {
+      const result = {};
+
+      getPaidMarkOptions(listType).forEach((option) => {
+        result[option.key] = true;
+      });
+
+      return result;
+    }
+
     function renderPaidMarks(item, listType = currentListType) {
       const marks = normalizePaidMarks(item, listType);
       return `
@@ -2478,24 +2488,16 @@
 
           row.querySelector(".done-check").addEventListener("change", async (event) => {
             const checked = event.target.checked;
-            const shouldSetPaidDone = checked && item.category === "판매";
 
             try {
               if (item.__source === "shared") {
                 await updateSharedItemState(listType, item.id, {
-                  done: checked,
-                  ...(shouldSetPaidDone ? { status: "지급완" } : {})
+                  done: checked
                 });
               } else {
                 const source = getPersonalEntriesForList(listType);
                 const nextEntries = source.map((entry) =>
-                  entry.id === item.id
-                    ? {
-                        ...entry,
-                        done: checked,
-                        ...(shouldSetPaidDone ? { status: "지급완" } : {})
-                      }
-                    : entry
+                  entry.id === item.id ? { ...entry, done: checked } : entry
                 );
 
                 await saveEntriesForList(listType, nextEntries);
@@ -2524,7 +2526,7 @@
                     await updateSharedItemState(listType, item.id, {
                       paidMarks: nextMarks,
                       paid: false,
-                      ...(allPaidMarksChecked ? { status: "지급완", done: true } : {})
+                      ...(allPaidMarksChecked ? { status: "지급완" } : {})
                     });
                   } else {
                     const source = getPersonalEntriesForList(listType);
@@ -2543,7 +2545,7 @@
                         ...entry,
                         paidMarks: nextMarks,
                         paid: false,
-                        ...(allPaidMarksChecked ? { status: "지급완", done: true } : {})
+                        ...(allPaidMarksChecked ? { status: "지급완" } : {})
                       };
                     });
 
@@ -2561,13 +2563,16 @@
           if (statusSelect) {
             statusSelect.addEventListener("change", async (event) => {
               const status = normalizeStatus(event.target.value);
-              const shouldMarkDone = status === "지급완";
+              const shouldCheckAllPaidMarks = status === "지급완";
 
               try {
                 if (item.__source === "shared") {
                   await updateSharedItemState(listType, item.id, {
                     status,
-                    ...(shouldMarkDone ? { done: true } : {})
+                    ...(shouldCheckAllPaidMarks ? {
+                      paidMarks: getAllPaidMarksChecked(listType),
+                      paid: false
+                    } : {})
                   });
                 } else {
                   const source = getPersonalEntriesForList(listType);
@@ -2576,7 +2581,10 @@
                       ? {
                           ...entry,
                           status,
-                          ...(shouldMarkDone ? { done: true } : {})
+                          ...(shouldCheckAllPaidMarks ? {
+                            paidMarks: getAllPaidMarksChecked(listType),
+                            paid: false
+                          } : {})
                         }
                       : entry
                   );
@@ -2912,7 +2920,7 @@
             ? normalizeStatus(getExcelCell(row, ["상태", "상태창", "지급상태", "status"]))
             : "";
           const risingTe = parseExcelBoolean(getExcelCell(row, ["상승테 여부", "상승테", "상승", "risingTe"]));
-          const done = status === "지급완" || parseExcelBoolean(getExcelCell(row, ["완료", "받음", "받은여부", "done"]));
+          const done = parseExcelBoolean(getExcelCell(row, ["완료", "받음", "받은여부", "done"]));
 
           if (category === "판매" && !isValidDateText(date)) {
             skippedCount += 1;
@@ -2959,7 +2967,7 @@
               done,
               status,
               paid: false,
-              paidMarks: normalizePaidMarks({}, listType),
+              paidMarks: status === "지급완" ? getAllPaidMarksChecked(listType) : normalizePaidMarks({}, listType),
               risingTe,
               createdAt: importStartedAt + rowIndex,
               createdBy: currentUser.uid,
