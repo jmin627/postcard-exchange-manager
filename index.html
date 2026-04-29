@@ -186,7 +186,7 @@
 
     table {
       width: 100%;
-      min-width: 900px;
+      min-width: 1240px;
       border-collapse: collapse;
       table-layout: fixed;
       background: #fff;
@@ -196,7 +196,7 @@
     td {
       border-bottom: 1px solid var(--line);
       border-right: 1px solid var(--line);
-      padding: 12px 10px;
+      padding: 11px 8px;
       height: 48px;
       text-align: center;
       vertical-align: middle;
@@ -214,7 +214,7 @@
     th {
       background: var(--soft);
       color: #34384a;
-      font-size: 14px;
+      font-size: 13px;
     }
 
     .col-done {
@@ -222,12 +222,16 @@
     }
 
     .col-name {
-      width: auto;
+      width: 180px;
     }
 
     td.col-name {
       text-align: left;
       font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      word-break: keep-all;
     }
 
     .col-category {
@@ -255,15 +259,15 @@
     }
 
     .col-note {
-      width: 180px;
+      width: 240px;
     }
 
     td.col-note {
-      text-align: left;
+      text-align: center;
       color: #4d5266;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 700;
-      word-break: break-word;
+      word-break: keep-all;
     }
 
     .group-row td {
@@ -314,7 +318,7 @@
       border: 1px solid var(--line);
       border-radius: 999px;
       background: #fff;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 900;
       white-space: nowrap;
     }
@@ -351,7 +355,7 @@
       border: 1px solid var(--line);
       border-radius: 999px;
       background: #fff;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 900;
     }
 
@@ -779,12 +783,16 @@
     }
 
     .dual-panel table {
-      min-width: 640px;
-      font-size: 13px;
+      min-width: 820px;
+      font-size: 12px;
     }
 
     .dual-panel .col-done {
       width: 54px;
+    }
+
+    .dual-panel .col-name {
+      width: 120px;
     }
 
     .dual-panel .col-category {
@@ -812,12 +820,12 @@
     }
 
     .dual-panel .col-note {
-      width: 120px;
+      width: 160px;
     }
 
     .dual-panel th,
     .dual-panel td {
-      padding: 9px 6px;
+      padding: 8px 5px;
     }
 
     @media (max-width: 1200px) {
