@@ -71,7 +71,8 @@
     }
 
     .card.wide {
-      width: min(1000px, 100%);
+      width: min(1800px, calc(100vw - 24px));
+      max-width: none;
     }
 
     h1,
@@ -179,7 +180,7 @@
 
     .table-wrap {
       width: 100%;
-      overflow-x: auto;
+      overflow-x: visible;
       border: 1px solid var(--line);
       border-radius: 16px;
     }
@@ -778,8 +779,8 @@
     }
 
     .dual-panel .table-wrap {
-      max-height: 70vh;
-      overflow: auto;
+      max-height: none;
+      overflow: visible;
     }
 
     .dual-panel table {
@@ -835,6 +836,11 @@
 
       .dual-list-grid {
         grid-template-columns: 1fr;
+      }
+
+      .table-wrap,
+      .dual-panel .table-wrap {
+        overflow-x: auto;
       }
     }
 
@@ -2964,4 +2970,4 @@
     });
   </script>
 </body>
-  </html>
+</html>
