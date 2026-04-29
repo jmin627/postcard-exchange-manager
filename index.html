@@ -592,6 +592,32 @@
       font-size: 14px;
       color: var(--muted);
     }
+
+    .notice-box {
+      margin: 16px 0 18px;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #f8f9ff;
+      color: #3f4355;
+      text-align: left;
+    }
+
+    .notice-box strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--primary);
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .notice-box p {
+      margin: 0;
+      color: #4d5266;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.55;
+    }
     .admin-area {
   margin-top: 18px;
   display: flex;
@@ -855,6 +881,11 @@
         <h1>엽서 교환 목록 정리</h1>
         <p>회원가입 또는 로그인 후 사용할 수 있습니다.</p>
 
+        <div class="notice-box">
+          <strong>공지</strong>
+          <p>회원가입 후 관리자 승인까지 시간이 걸릴 수 있습니다. 승인 전에는 목록을 이용할 수 없습니다.</p>
+        </div>
+
         <label class="field-label" for="emailInput">이메일</label>
         <input id="emailInput" type="email" placeholder="이메일 입력" autocomplete="email" />
 
@@ -903,6 +934,11 @@
             <p id="userEmail"></p>
           </div>
           <button id="logoutBtn" type="button" class="small-btn">로그아웃</button>
+        </div>
+
+        <div class="notice-box">
+          <strong>공지</strong>
+          <p>명단 추가 시 개인지급/길드지급과 엽서종류를 확인해주세요. 관리자가 추가한 공통 길드지급 항목은 모든 승인 사용자에게 표시됩니다.</p>
         </div>
 
         <div class="big-buttons home-buttons">
