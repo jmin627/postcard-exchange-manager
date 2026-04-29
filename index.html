@@ -2283,8 +2283,7 @@
 
     function splitNicknames(value) {
       return String(value || "")
-        .split(/[,
-]/)
+        .split(/[,\\n]/)
         .map((name) => name.trim())
         .filter(Boolean);
     }
