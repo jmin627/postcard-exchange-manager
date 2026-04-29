@@ -239,6 +239,10 @@
     }
 
     .col-date {
+      width: 110px;
+    }
+
+    .col-status {
       width: 120px;
     }
 
@@ -308,6 +312,62 @@
       height: 16px;
       accent-color: #26a269;
       cursor: pointer;
+    }
+
+    .paid-mark.disabled {
+      background: #eeeeee;
+      color: #777;
+      cursor: not-allowed;
+    }
+
+    .paid-mark.disabled input {
+      cursor: not-allowed;
+      accent-color: #9ca3af;
+    }
+
+    .paid-mark.black-check input {
+      accent-color: #111111;
+    }
+
+    .payment-status-btn {
+      height: 32px;
+      min-width: 82px;
+      padding: 0 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      color: var(--text);
+    }
+
+    .payment-status-btn.status-unpaid {
+      background: #f2f2f2;
+      color: #555;
+    }
+
+    .payment-status-btn.status-waiting {
+      background: #fff8e6;
+      color: #946200;
+      border-color: #ffe1a3;
+    }
+
+    .payment-status-btn.status-contacted {
+      background: #eeeeee;
+      color: #111111;
+      border-color: #cccccc;
+    }
+
+    .payment-status-btn.status-paying {
+      background: #e8fff0;
+      color: #217a3a;
+      border-color: #bfe8ca;
+    }
+
+    .payment-status-btn.status-complete {
+      background: #202337;
+      color: #ffffff;
+      border-color: #202337;
     }
 
     .done-row {
@@ -445,6 +505,12 @@
     .choice-check.disabled {
       opacity: 0.62;
       cursor: not-allowed;
+    }
+
+    .excel-btn {
+      width: 100%;
+      margin-top: 8px;
+      background: #444;
     }
 
     .hint {
@@ -651,7 +717,7 @@
     }
 
     .dual-panel table {
-      min-width: 640px;
+      min-width: 730px;
       font-size: 13px;
     }
 
@@ -668,11 +734,15 @@
     }
 
     .dual-panel .col-date {
-      width: 82px;
+      width: 78px;
+    }
+
+    .dual-panel .col-status {
+      width: 92px;
     }
 
     .dual-panel .col-paid {
-      width: 120px;
+      width: 118px;
     }
 
     .dual-panel .col-edit {
@@ -827,6 +897,7 @@
                     <th class="col-category">구분</th>
                     <th class="col-payment">지급방식</th>
                     <th class="col-date">지급시기</th>
+                    <th class="col-status">지급상태</th>
                     <th class="col-paid">지급여부</th>
                     <th class="col-edit">수정</th>
                   </tr>
@@ -850,6 +921,7 @@
                     <th class="col-category">구분</th>
                     <th class="col-payment">지급방식</th>
                     <th class="col-date">지급시기</th>
+                    <th class="col-status">지급상태</th>
                     <th class="col-paid">지급여부</th>
                     <th class="col-edit">수정</th>
                   </tr>
@@ -897,6 +969,7 @@
                 <th class="col-category">구분</th>
                 <th class="col-payment">지급방식</th>
                 <th class="col-date">지급시기</th>
+                <th class="col-status">지급상태</th>
                 <th class="col-paid">지급여부</th>
                 <th class="col-edit">수정</th>
               </tr>
@@ -920,7 +993,8 @@
 
       <div class="field">
         <label for="nicknameInput">닉네임</label>
-        <input id="nicknameInput" type="text" placeholder="닉네임 입력" autocomplete="off" />
+        <input id="nicknameInput" type="text" placeholder="닉네임 입력, 여러 명은 쉼표(,)로 구분" autocomplete="off" />
+        <p class="hint">여러 명을 한 번에 추가하려면 예: 홍길동, 김철수, 이영희</p>
       </div>
 
       <div class="field" id="listTypeField">
@@ -961,6 +1035,13 @@
         <p class="hint">예: 4/28, 10/03, 보류. 비워두면 오늘 날짜로 저장됩니다.</p>
       </div>
 
+      <div class="field" id="excelImportField">
+        <label for="excelFileInput">엑셀 불러오기</label>
+        <input id="excelFileInput" type="file" accept=".xlsx,.xls,.csv" />
+        <p class="hint">첫 번째 행은 반드시 닉네임 / 구분 / 지급방식 / 지급시기 순서여야 합니다.</p>
+        <button id="importExcelBtn" type="button" class="excel-btn">엑셀 명단 추가</button>
+      </div>
+
       <div class="modal-actions">
         <button id="deleteEntryBtn" type="button" class="danger-btn hidden">삭제</button>
         <button id="cancelModalBtn" type="button" class="cancel-btn">취소</button>
@@ -971,6 +1052,7 @@
 
   <div id="toast" class="toast hidden"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script type="module">
     import { auth, db } from "./firebase.js";
 
@@ -1062,6 +1144,9 @@
     const listTypeSebae = document.getElementById("listTypeSebae");
     const listTypeFourth = document.getElementById("listTypeFourth");
     const dateInput = document.getElementById("dateInput");
+    const excelImportField = document.getElementById("excelImportField");
+    const excelFileInput = document.getElementById("excelFileInput");
+    const importExcelBtn = document.getElementById("importExcelBtn");
     const deleteEntryBtn = document.getElementById("deleteEntryBtn");
     const cancelModalBtn = document.getElementById("cancelModalBtn");
     const saveEntryBtn = document.getElementById("saveEntryBtn");
@@ -1451,6 +1536,67 @@
       return item.paymentType || "개인지급";
     }
 
+    const paymentStatusOrder = ["미지급", "접선대기중", "접메완", "지급중", "지급완"];
+
+    function areAllPaidMarksChecked(item, listType = currentListType) {
+      const marks = normalizePaidMarks(item, listType);
+      const options = getPaidMarkOptions(listType);
+      return options.length > 0 && options.every((option) => marks[option.key] === true);
+    }
+
+    function hasAnyPaidMarkChecked(item, listType = currentListType) {
+      const marks = normalizePaidMarks(item, listType);
+      return getPaidMarkOptions(listType).some((option) => marks[option.key] === true);
+    }
+
+    function getPaymentStatus(item, listType = currentListType) {
+      const status = String(item?.paymentStatus || "").trim();
+      if (paymentStatusOrder.includes(status)) return status;
+
+      if (areAllPaidMarksChecked(item, listType)) return "지급완";
+      if (hasAnyPaidMarkChecked(item, listType)) return "지급중";
+      return "미지급";
+    }
+
+    function getNextPaymentStatus(status) {
+      const currentIndex = paymentStatusOrder.indexOf(status);
+      const nextIndex = currentIndex === -1
+        ? 0
+        : (currentIndex + 1) % paymentStatusOrder.length;
+
+      return paymentStatusOrder[nextIndex];
+    }
+
+    function isPaidMarksDisabled(status) {
+      return ["미지급", "접선대기중", "접메완"].includes(status);
+    }
+
+    function getPaymentStatusClass(status) {
+      const map = {
+        "미지급": "status-unpaid",
+        "접선대기중": "status-waiting",
+        "접메완": "status-contacted",
+        "지급중": "status-paying",
+        "지급완": "status-complete"
+      };
+
+      return map[status] || "status-unpaid";
+    }
+
+    function setAllPaidMarks(listType, checked) {
+      const result = {};
+      getPaidMarkOptions(listType).forEach((option) => {
+        result[option.key] = checked;
+      });
+      return result;
+    }
+
+    function getPaidMarksForStatusChange(status, marks, listType) {
+      if (status === "지급완") return setAllPaidMarks(listType, true);
+      if (status === "미지급") return setAllPaidMarks(listType, false);
+      return marks;
+    }
+
     function getPaidMarkOptions(listType = currentListType) {
       if (listType === "fourth") {
         return [
@@ -1485,15 +1631,20 @@
 
     function renderPaidMarks(item, listType = currentListType) {
       const marks = normalizePaidMarks(item, listType);
+      const status = getPaymentStatus(item, listType);
+      const disabled = isPaidMarksDisabled(status);
+      const blackCheck = status === "접메완" || status === "지급완";
+
       return `
         <div class="paid-marks">
           ${getPaidMarkOptions(listType).map((option) => `
-            <label class="paid-mark">
+            <label class="paid-mark ${disabled ? "disabled" : ""} ${blackCheck ? "black-check" : ""}">
               <input
                 class="paid-mark-check"
                 type="checkbox"
                 data-paid-key="${option.key}"
                 ${marks[option.key] ? "checked" : ""}
+                ${disabled ? "disabled" : ""}
               />
               <span>${option.label}</span>
             </label>
@@ -1609,7 +1760,7 @@
     function rowMatchesQuery(item, query) {
       if (!query) return false;
 
-      const text = `${item.nickname} ${item.category} ${getPaymentType(item)} ${item.date}`.toLowerCase();
+      const text = `${item.nickname} ${item.category} ${getPaymentType(item)} ${item.date} ${getPaymentStatus(item)}`.toLowerCase();
       return text.includes(query.toLowerCase());
     }
 
@@ -1633,7 +1784,7 @@
 
         const groupRow = document.createElement("tr");
         groupRow.className = "group-row";
-        groupRow.innerHTML = `<td colspan="7">${getGroupLabel(category, sorted)}</td>`;
+        groupRow.innerHTML = `<td colspan="8">${getGroupLabel(category, sorted)}</td>`;
         tableBodyTarget.appendChild(groupRow);
 
         groupEntries.forEach((item) => {
@@ -1657,6 +1808,15 @@
             <td class="col-category strike-cell"><span class="type-badge">${highlightText(item.category, query)}</span></td>
             <td class="col-payment strike-cell">${highlightText(getPaymentType(item), query)}</td>
             <td class="col-date strike-cell">${highlightText(item.date, query)}</td>
+            <td class="col-status">
+              <button
+                type="button"
+                class="payment-status-btn ${getPaymentStatusClass(getPaymentStatus(item, listType))}"
+                data-status="${getPaymentStatus(item, listType)}"
+              >
+                ${getPaymentStatus(item, listType)}
+              </button>
+            </td>
             <td class="col-paid">
               ${renderPaidMarks(item, listType)}
             </td>
@@ -1679,6 +1839,32 @@
             }
           });
 
+          row.querySelector(".payment-status-btn").addEventListener("click", async () => {
+            const source = getEntriesForList(listType);
+
+            const nextEntries = source.map((entry) => {
+              if (entry.id !== item.id) return entry;
+
+              const currentStatus = getPaymentStatus(entry, listType);
+              const nextStatus = getNextPaymentStatus(currentStatus);
+              const currentMarks = normalizePaidMarks(entry, listType);
+
+              return {
+                ...entry,
+                paymentStatus: nextStatus,
+                paidMarks: getPaidMarksForStatusChange(nextStatus, currentMarks, listType),
+                paid: false
+              };
+            });
+
+            try {
+              await saveEntriesForList(listType, nextEntries);
+            } catch (error) {
+              console.error(error);
+              showToast("지급상태 저장에 실패했습니다.");
+            }
+          });
+
           row.querySelectorAll(".paid-mark-check").forEach((checkbox) => {
             checkbox.addEventListener("change", async (event) => {
               const paidKey = event.target.dataset.paidKey;
@@ -1687,13 +1873,28 @@
               const nextEntries = source.map((entry) => {
                 if (entry.id !== item.id) return entry;
 
+                const currentStatus = getPaymentStatus(entry, listType);
+                if (isPaidMarksDisabled(currentStatus)) return entry;
+
                 const currentMarks = normalizePaidMarks(entry, listType);
+                const nextMarks = {
+                  ...currentMarks,
+                  [paidKey]: event.target.checked
+                };
+
+                const allChecked = getPaidMarkOptions(listType).every((option) => nextMarks[option.key] === true);
+                let nextStatus = currentStatus;
+
+                if (currentStatus === "지급완" && event.target.checked === false) {
+                  nextStatus = "지급중";
+                } else if (currentStatus === "지급중" && allChecked) {
+                  nextStatus = "지급완";
+                }
+
                 return {
                   ...entry,
-                  paidMarks: {
-                    ...currentMarks,
-                    [paidKey]: event.target.checked
-                  },
+                  paymentStatus: nextStatus,
+                  paidMarks: nextMarks,
                   paid: false
                 };
               });
@@ -1790,6 +1991,7 @@
       const defaultListType = modalListType || currentListType || "sebae";
       setSelectedListTypes(editingId ? [defaultListType] : [defaultListType]);
       setListTypeFieldDisabled(Boolean(editingId));
+      excelImportField.classList.toggle("hidden", Boolean(editingId));
 
       document.querySelectorAll(".seg-btn[data-category]").forEach((button) => {
         button.classList.toggle("active", button.dataset.category === selectedCategory);
@@ -1809,10 +2011,12 @@
       modalListType = null;
       nicknameInput.value = "";
       dateInput.value = "";
+      if (excelFileInput) excelFileInput.value = "";
       selectedCategory = "판매";
       selectedPaymentType = "개인지급";
       setSelectedListTypes([]);
       setListTypeFieldDisabled(false);
+      excelImportField.classList.remove("hidden");
 
       document.querySelectorAll(".seg-btn[data-category]").forEach((button) => {
         button.classList.toggle("active", button.dataset.category === "판매");
@@ -1821,6 +2025,172 @@
       document.querySelectorAll(".payment-btn").forEach((button) => {
         button.classList.toggle("active", button.dataset.paymentType === "개인지급");
       });
+    }
+
+    function splitNicknames(value) {
+      return String(value || "")
+        .split(/[,
+]/)
+        .map((name) => name.trim())
+        .filter(Boolean);
+    }
+
+    function normalizeCategory(value) {
+      const text = String(value || "").trim();
+      return ["판매", "교환", "기부"].includes(text) ? text : "";
+    }
+
+    function normalizePaymentTypeText(value) {
+      const text = String(value || "").trim();
+      return ["개인지급", "길드지급"].includes(text) ? text : "";
+    }
+
+    function buildEntry({ nickname, category, paymentType, date }, listType, index = 0) {
+      return {
+        id: createId(),
+        nickname,
+        category,
+        paymentType,
+        date,
+        paymentStatus: "미지급",
+        done: false,
+        paid: false,
+        paidMarks: normalizePaidMarks({}, listType),
+        createdAt: Date.now() + index
+      };
+    }
+
+    async function addEntriesToSelectedLists(selectedListTypes, entrySources) {
+      await Promise.all(
+        selectedListTypes.map(async (listType) => {
+          const sourceEntries = await loadEntriesForList(listType);
+          const newEntries = entrySources.map((entrySource, index) =>
+            buildEntry(entrySource, listType, index)
+          );
+
+          await saveEntriesForList(listType, [...sourceEntries, ...newEntries]);
+        })
+      );
+    }
+
+    function readExcelCell(value) {
+      return String(value ?? "").trim();
+    }
+
+    async function importExcelEntries() {
+      if (editingId) {
+        showToast("수정 중에는 엑셀 불러오기를 사용할 수 없습니다.");
+        return;
+      }
+
+      const selectedListTypes = getSelectedListTypes();
+      if (selectedListTypes.length === 0) {
+        showToast("엽서종류를 하나 이상 선택해주세요.");
+        return;
+      }
+
+      const file = excelFileInput?.files?.[0];
+      if (!file) {
+        showToast("엑셀 파일을 선택해주세요.");
+        return;
+      }
+
+      if (!window.XLSX) {
+        showToast("엑셀 불러오기 라이브러리를 불러오지 못했습니다.");
+        return;
+      }
+
+      try {
+        const buffer = await file.arrayBuffer();
+        const workbook = window.XLSX.read(buffer, { type: "array" });
+        const firstSheetName = workbook.SheetNames[0];
+
+        if (!firstSheetName) {
+          showToast("엑셀 파일에 시트가 없습니다.");
+          return;
+        }
+
+        const worksheet = workbook.Sheets[firstSheetName];
+        const rows = window.XLSX.utils.sheet_to_json(worksheet, {
+          header: 1,
+          defval: ""
+        });
+
+        const nonEmptyRows = rows.filter((row) =>
+          row.some((cell) => readExcelCell(cell) !== "")
+        );
+
+        if (nonEmptyRows.length < 2) {
+          showToast("불러올 명단이 없습니다.");
+          return;
+        }
+
+        const header = nonEmptyRows[0].slice(0, 4).map(readExcelCell);
+        const expectedHeader = ["닉네임", "구분", "지급방식", "지급시기"];
+
+        const isHeaderValid = expectedHeader.every((title, index) => header[index] === title);
+        if (!isHeaderValid) {
+          showToast("첫 행은 닉네임/구분/지급방식/지급시기 순서여야 합니다.");
+          return;
+        }
+
+        const entrySources = [];
+        const errors = [];
+
+        nonEmptyRows.slice(1).forEach((row, index) => {
+          const rowNumber = index + 2;
+          const nickname = readExcelCell(row[0]);
+          const category = normalizeCategory(row[1]);
+          const paymentType = normalizePaymentTypeText(row[2]);
+          const date = normalizeDateInput(readExcelCell(row[3]));
+
+          if (!nickname) {
+            errors.push(`${rowNumber}행: 닉네임 없음`);
+            return;
+          }
+
+          if (!category) {
+            errors.push(`${rowNumber}행: 구분은 판매/교환/기부만 가능`);
+            return;
+          }
+
+          if (!paymentType) {
+            errors.push(`${rowNumber}행: 지급방식은 개인지급/길드지급만 가능`);
+            return;
+          }
+
+          if (!isValidDateText(date)) {
+            errors.push(`${rowNumber}행: 지급시기 형식 오류`);
+            return;
+          }
+
+          entrySources.push({
+            nickname,
+            category,
+            paymentType,
+            date
+          });
+        });
+
+        if (errors.length > 0) {
+          alert(`엑셀에서 오류가 있습니다.\n\n${errors.slice(0, 10).join("\n")}${errors.length > 10 ? "\n..." : ""}`);
+          return;
+        }
+
+        if (entrySources.length === 0) {
+          showToast("추가할 명단이 없습니다.");
+          return;
+        }
+
+        await addEntriesToSelectedLists(selectedListTypes, entrySources);
+        closeModal();
+
+        const listText = selectedListTypes.length > 1 ? "두 목록에" : "선택한 목록에";
+        showToast(`엑셀 명단 ${entrySources.length}명을 ${listText} 추가했습니다.`);
+      } catch (error) {
+        console.error(error);
+        showToast("엑셀 불러오기에 실패했습니다.");
+      }
     }
 
     async function saveEntry() {
@@ -1839,11 +2209,18 @@
         return;
       }
 
-      const nickname = nicknameInput.value.trim();
+      const nicknameRaw = nicknameInput.value.trim();
+      const nicknames = splitNicknames(nicknameRaw);
       const date = normalizeDateInput(dateInput.value.trim());
 
-      if (!nickname) {
+      if (nicknames.length === 0) {
         showToast("닉네임을 입력해주세요.");
+        nicknameInput.focus();
+        return;
+      }
+
+      if (editingId && nicknames.length > 1) {
+        showToast("수정할 때는 닉네임을 하나만 입력해주세요.");
         nicknameInput.focus();
         return;
       }
@@ -1863,10 +2240,11 @@
 
             return {
               ...entry,
-              nickname,
+              nickname: nicknames[0],
               category: selectedCategory,
               paymentType: selectedPaymentType,
               date,
+              paymentStatus: getPaymentStatus(entry, targetListType),
               paidMarks: normalizePaidMarks(entry, targetListType),
               paid: false
             };
@@ -1878,30 +2256,20 @@
           return;
         }
 
-        await Promise.all(
-          selectedListTypes.map(async (listType) => {
-            const sourceEntries = await loadEntriesForList(listType);
-            const nextEntries = [
-              ...sourceEntries,
-              {
-                id: createId(),
-                nickname,
-                category: selectedCategory,
-                paymentType: selectedPaymentType,
-                date,
-                done: false,
-                paid: false,
-                paidMarks: normalizePaidMarks({}, listType),
-                createdAt: Date.now()
-              }
-            ];
+        const entrySources = nicknames.map((nickname) => ({
+          nickname,
+          category: selectedCategory,
+          paymentType: selectedPaymentType,
+          date
+        }));
 
-            await saveEntriesForList(listType, nextEntries);
-          })
-        );
+        await addEntriesToSelectedLists(selectedListTypes, entrySources);
 
         closeModal();
-        showToast(selectedListTypes.length > 1 ? "두 목록에 동시에 추가했습니다." : "명단에 추가했습니다.");
+
+        const nameText = nicknames.length > 1 ? `${nicknames.length}명` : "명단";
+        const listText = selectedListTypes.length > 1 ? "두 목록에" : "선택한 목록에";
+        showToast(`${nameText}을 ${listText} 추가했습니다.`);
       } catch (error) {
         console.error(error);
         showToast("저장에 실패했습니다.");
@@ -2029,6 +2397,7 @@
     backAdminHomeBtn.addEventListener("click", goHome);
 
     addEntryBtn.addEventListener("click", () => openModal());
+    importExcelBtn.addEventListener("click", importExcelEntries);
 
     searchInput.addEventListener("input", () => {
       renderEntries();
