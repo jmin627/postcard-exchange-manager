@@ -71,7 +71,7 @@
     }
 
     .card.wide {
-      width: min(1000px, 100%);
+      width: min(1250px, 100%);
     }
 
     h1,
@@ -222,12 +222,16 @@
     }
 
     .col-name {
-      width: auto;
+      width: 180px;
+      min-width: 180px;
     }
 
     td.col-name {
       text-align: left;
       font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .col-category {
@@ -810,12 +814,17 @@
     }
 
     .dual-panel table {
-      min-width: 820px;
+      min-width: 980px;
       font-size: 13px;
     }
 
     .dual-panel .col-done {
       width: 54px;
+    }
+
+    .dual-panel .col-name {
+      width: 150px;
+      min-width: 150px;
     }
 
     .dual-panel .col-category {
