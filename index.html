@@ -173,7 +173,7 @@
 
     .toolbar {
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: 1fr auto auto;
       gap: 10px;
       margin-bottom: 18px;
     }
@@ -1075,7 +1075,9 @@
 
         <div class="toolbar">
           <input id="searchInput" type="text" placeholder="검색어 입력" />
+          <button id="excelImportBtn" type="button">엑셀로 추가</button>
           <button id="addEntryBtn" type="button">명단 추가</button>
+          <input id="excelFileInput" class="hidden" type="file" accept=".xlsx,.xls,.csv" />
         </div>
 
         <div class="sort-toolbar">
@@ -1192,6 +1194,8 @@
 
   <div id="toast" class="toast hidden"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
   <script type="module">
     import { auth, db } from "./firebase.js";
 
@@ -1279,6 +1283,8 @@
     const listTitle = document.getElementById("listTitle");
     const searchInput = document.getElementById("searchInput");
     const addEntryBtn = document.getElementById("addEntryBtn");
+    const excelImportBtn = document.getElementById("excelImportBtn");
+    const excelFileInput = document.getElementById("excelFileInput");
     const tableBody = document.getElementById("tableBody");
     const emptyState = document.getElementById("emptyState");
     const listProgress = document.getElementById("listProgress");
@@ -2451,6 +2457,236 @@
       });
     }
 
+    function normalizeExcelValue(value) {
+      return String(value ?? "").trim();
+    }
+
+    function normalizeExcelKey(value) {
+      return String(value ?? "")
+        .trim()
+        .replace(/\s+/g, "")
+        .toLowerCase();
+    }
+
+    function getExcelCell(row, aliases) {
+      const normalizedAliases = aliases.map(normalizeExcelKey);
+
+      for (const [key, value] of Object.entries(row)) {
+        if (normalizedAliases.includes(normalizeExcelKey(key))) {
+          return normalizeExcelValue(value);
+        }
+      }
+
+      return "";
+    }
+
+    function parseExcelListTypes(value) {
+      const raw = normalizeExcelValue(value);
+
+      if (!raw) {
+        return currentListType ? [currentListType] : [];
+      }
+
+      const compact = raw.replace(/\s+/g, "").toLowerCase();
+
+      if (
+        compact.includes("둘") ||
+        compact.includes("전체") ||
+        compact.includes("both") ||
+        compact.includes("all") ||
+        (compact.includes("세배") && compact.includes("4")) ||
+        (compact.includes("sebae") && compact.includes("fourth"))
+      ) {
+        return ["sebae", "fourth"];
+      }
+
+      if (compact.includes("세배") || compact.includes("sebae") || compact === "3") {
+        return ["sebae"];
+      }
+
+      if (
+        compact.includes("4기") ||
+        compact.includes("사기") ||
+        compact.includes("fourth") ||
+        compact === "4"
+      ) {
+        return ["fourth"];
+      }
+
+      return currentListType ? [currentListType] : [];
+    }
+
+    function parseExcelCategory(value) {
+      const raw = normalizeExcelValue(value);
+
+      if (raw.includes("기부")) return "기부";
+      if (raw.includes("교환")) return "교환";
+      if (raw.includes("판매")) return "판매";
+
+      return "판매";
+    }
+
+    function parseExcelPaymentType(value) {
+      const raw = normalizeExcelValue(value);
+
+      if (raw.includes("길드")) return "길드지급";
+      return "개인지급";
+    }
+
+    function parseExcelBoolean(value) {
+      const raw = normalizeExcelValue(value).toLowerCase();
+
+      return ["true", "1", "y", "yes", "o", "ok", "v", "✓", "체크", "예", "네", "완료"].includes(raw);
+    }
+
+    async function importEntriesFromExcel(file) {
+      if (!currentUser || !currentListType) {
+        showToast("목록 화면에서만 엑셀 추가를 사용할 수 있습니다.");
+        return;
+      }
+
+      if (!window.XLSX) {
+        showToast("엑셀 불러오기 도구를 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.");
+        return;
+      }
+
+      try {
+        const buffer = await file.arrayBuffer();
+        const workbook = window.XLSX.read(buffer, { type: "array", cellDates: false });
+        const firstSheetName = workbook.SheetNames[0];
+
+        if (!firstSheetName) {
+          showToast("엑셀 시트를 찾지 못했습니다.");
+          return;
+        }
+
+        const worksheet = workbook.Sheets[firstSheetName];
+        const rows = window.XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+        if (rows.length === 0) {
+          showToast("엑셀에 추가할 데이터가 없습니다.");
+          return;
+        }
+
+        const targetEntries = {};
+        const duplicateListNames = [];
+        let importedCount = 0;
+        let skippedCount = 0;
+
+        for (const row of rows) {
+          const nickname = getExcelCell(row, ["닉네임", "닉", "이름", "name", "nickname"])
+            .trim()
+            .replace(/\s+/g, " ");
+
+          if (!nickname) {
+            skippedCount += 1;
+            continue;
+          }
+
+          const listTypes = parseExcelListTypes(getExcelCell(row, ["엽서종류", "엽서", "목록", "리스트", "list", "type"]));
+
+          if (listTypes.length === 0) {
+            skippedCount += 1;
+            continue;
+          }
+
+          const category = parseExcelCategory(getExcelCell(row, ["구분", "분류", "category"]));
+          const paymentType = parseExcelPaymentType(getExcelCell(row, ["지급방식", "지급", "payment", "paymentType"]));
+          const date = normalizeDateInput(getExcelCell(row, ["지급시기", "날짜", "date"]));
+          const note = getExcelCell(row, ["비고", "메모", "note", "memo"]);
+          const risingTe = parseExcelBoolean(getExcelCell(row, ["상승테 여부", "상승테", "상승", "risingTe"]));
+          const done = parseExcelBoolean(getExcelCell(row, ["완료", "받음", "받은여부", "done"]));
+
+          if (!isValidDateText(date)) {
+            skippedCount += 1;
+            continue;
+          }
+
+          for (const listType of listTypes) {
+            const shouldSaveAsShared = paymentType === "길드지급" && currentProfile?.role === "admin";
+            const targetKey = `${shouldSaveAsShared ? "shared" : "personal"}:${listType}`;
+
+            if (!targetEntries[targetKey]) {
+              const sourceEntries = shouldSaveAsShared
+                ? await loadSharedEntriesForList(listType)
+                : await loadEntriesForList(listType);
+
+              targetEntries[targetKey] = {
+                mode: shouldSaveAsShared ? "shared" : "personal",
+                listType,
+                entries: [...sourceEntries]
+              };
+            }
+
+            const normalizedNickname = normalizeNicknameForCompare(nickname);
+            const hasDuplicate = targetEntries[targetKey].entries.some((entry) =>
+              entry.deleted !== true &&
+              normalizeNicknameForCompare(entry.nickname) === normalizedNickname
+            );
+
+            if (hasDuplicate) {
+              const label = `${listMeta[listType]?.title || listType}${targetEntries[targetKey].mode === "shared" ? " 공통" : ""}`;
+
+              if (!duplicateListNames.includes(label)) {
+                duplicateListNames.push(label);
+              }
+            }
+
+            targetEntries[targetKey].entries.push({
+              id: createId(),
+              nickname,
+              category,
+              paymentType: shouldSaveAsShared ? "길드지급" : paymentType,
+              date,
+              note,
+              done,
+              paid: false,
+              paidMarks: normalizePaidMarks({}, listType),
+              risingTe,
+              createdAt: Date.now(),
+              createdBy: currentUser.uid,
+              createdByEmail: currentUser.email,
+              shared: shouldSaveAsShared
+            });
+
+            importedCount += 1;
+          }
+        }
+
+        if (importedCount === 0) {
+          showToast("추가할 수 있는 행이 없습니다. 엑셀 양식을 확인해주세요.");
+          return;
+        }
+
+        if (duplicateListNames.length > 0) {
+          const ok = confirm(
+            `중복 닉네임이 있는 목록이 있습니다.\n\n${duplicateListNames.join(", ")}\n\n그래도 엑셀 데이터를 추가할까요?`
+          );
+
+          if (!ok) return;
+        }
+
+        await Promise.all(
+          Object.values(targetEntries).map(async (target) => {
+            if (target.mode === "shared") {
+              await saveSharedEntriesForList(target.listType, target.entries);
+            } else {
+              await saveEntriesForList(target.listType, target.entries);
+            }
+          })
+        );
+
+        showToast(
+          skippedCount > 0
+            ? `${importedCount}개를 추가했습니다. ${skippedCount}행은 건너뛰었습니다.`
+            : `${importedCount}개를 추가했습니다.`
+        );
+      } catch (error) {
+        console.error(error);
+        showToast("엑셀 추가에 실패했습니다.");
+      }
+    }
+
     async function saveEntry() {
       if (editingSource === "shared") {
         showToast("공통 길드지급 항목은 여기서 수정할 수 없습니다.");
@@ -2878,6 +3114,19 @@
     backTrashHomeBtn.addEventListener("click", goHome);
 
     addEntryBtn.addEventListener("click", () => openModal());
+
+    excelImportBtn.addEventListener("click", () => {
+      excelFileInput.value = "";
+      excelFileInput.click();
+    });
+
+    excelFileInput.addEventListener("change", async (event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      await importEntriesFromExcel(file);
+      excelFileInput.value = "";
+    });
 
     searchInput.addEventListener("input", () => {
       renderEntries();
