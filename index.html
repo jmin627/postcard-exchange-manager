@@ -1137,7 +1137,7 @@
 
       <div class="field">
         <label for="nicknameInput">닉네임</label>
-        <input id="nicknameInput" type="text" placeholder="닉네임 입력" autocomplete="off" />
+        <input id="nicknameInput" type="text" placeholder="닉네임 입력, 여러 명은 쉼표(,)로 구분" autocomplete="off" />
       </div>
 
       <div class="field" id="listTypeField">
@@ -2708,11 +2708,18 @@
         return;
       }
 
-      const nickname = nicknameInput.value.trim().replace(/\s+/g, " ");
+      const rawNickname = nicknameInput.value.trim();
+      const nicknameList = editingId
+        ? [rawNickname.replace(/\s+/g, " ")]
+        : rawNickname
+            .split(/[,，\n]/)
+            .map((name) => name.trim().replace(/\s+/g, " "))
+            .filter(Boolean);
+
       const date = normalizeDateInput(dateInput.value.trim());
       const note = noteInput.value.trim();
 
-      if (!nickname) {
+      if (nicknameList.length === 0) {
         showToast("닉네임을 입력해주세요.");
         nicknameInput.focus();
         return;
@@ -2730,8 +2737,7 @@
 
       try {
         const entriesByTarget = {};
-        const duplicateListNames = [];
-        const normalizedNickname = normalizeNicknameForCompare(nickname);
+        const duplicateItems = [];
 
         for (const listType of selectedListTypes) {
           const sourceEntries = shouldSaveAsShared
@@ -2740,26 +2746,41 @@
 
           entriesByTarget[listType] = sourceEntries;
 
-          const hasDuplicate = sourceEntries.some((entry) =>
-            entry.id !== editingId &&
-            entry.deleted !== true &&
-            normalizeNicknameForCompare(entry.nickname) === normalizedNickname
-          );
+          const seenInInput = new Set();
 
-          if (hasDuplicate) {
-            duplicateListNames.push(listMeta[listType]?.title || listType);
-          }
+          nicknameList.forEach((nickname) => {
+            const normalizedNickname = normalizeNicknameForCompare(nickname);
+            const listName = listMeta[listType]?.title || listType;
+
+            if (seenInInput.has(normalizedNickname)) {
+              duplicateItems.push(`${listName}: ${nickname} 입력값 중복`);
+              return;
+            }
+
+            seenInInput.add(normalizedNickname);
+
+            const hasDuplicate = sourceEntries.some((entry) =>
+              entry.id !== editingId &&
+              entry.deleted !== true &&
+              normalizeNicknameForCompare(entry.nickname) === normalizedNickname
+            );
+
+            if (hasDuplicate) {
+              duplicateItems.push(`${listName}: ${nickname}`);
+            }
+          });
         }
 
-        if (duplicateListNames.length > 0) {
+        if (duplicateItems.length > 0) {
           const ok = confirm(
-            `이미 같은 닉네임이 있는 목록이 있습니다.\n\n${duplicateListNames.join(", ")}\n\n그래도 저장할까요?`
+            `이미 같은 닉네임이 있는 항목이 있습니다.\n\n${duplicateItems.join("\n")}\n\n그래도 저장할까요?`
           );
 
           if (!ok) return;
         }
 
         if (editingId) {
+          const nickname = nicknameList[0];
           const sourceEntries = entriesByTarget[targetListType] || [];
 
           const nextEntries = sourceEntries.map((entry) => {
@@ -2789,7 +2810,7 @@
 
             const nextEntries = [
               ...sourceEntries,
-              {
+              ...nicknameList.map((nickname) => ({
                 id: createId(),
                 nickname,
                 category: selectedCategory,
@@ -2804,7 +2825,7 @@
                 createdBy: currentUser.uid,
                 createdByEmail: currentUser.email,
                 shared: shouldSaveAsShared
-              }
+              }))
             ];
 
             if (shouldSaveAsShared) {
@@ -2816,10 +2837,13 @@
         );
 
         closeModal();
+
+        const totalAdded = nicknameList.length * selectedListTypes.length;
+
         if (shouldSaveAsShared) {
-          showToast(selectedListTypes.length > 1 ? "공통 길드지급 항목을 두 목록에 추가했습니다." : "공통 길드지급 항목을 추가했습니다.");
+          showToast(`${totalAdded}개의 공통 길드지급 항목을 추가했습니다.`);
         } else {
-          showToast(selectedListTypes.length > 1 ? "두 목록에 동시에 추가했습니다." : "명단에 추가했습니다.");
+          showToast(`${totalAdded}개의 명단을 추가했습니다.`);
         }
       } catch (error) {
         console.error(error);
