@@ -1922,6 +1922,15 @@
       return item?.note || item?.memo || item?.remark || "";
     }
 
+    function getDisplayDate(item) {
+      return item?.category === "판매" ? (item.date || "") : "";
+    }
+
+    function renderPaymentCell(item, listType = currentListType) {
+      if (item?.category !== "판매") return "";
+      return renderPaidMarks(item, listType);
+    }
+
     function getPaidMarkOptions(listType = currentListType) {
       if (listType === "fourth") {
         return [
@@ -1974,6 +1983,8 @@
     }
 
     function isPaymentComplete(item, listType = currentListType) {
+      if (item?.category !== "판매") return true;
+
       const marks = normalizePaidMarks(item, listType);
       return getPaidMarkOptions(listType).every((option) => marks[option.key] === true);
     }
@@ -2152,7 +2163,7 @@
     function rowMatchesQuery(item, query) {
       if (!query) return false;
 
-      const text = `${item.nickname} ${item.category} ${getPaymentType(item)} ${item.date} ${getNote(item)}`.toLowerCase();
+      const text = `${item.nickname} ${item.category} ${getPaymentType(item)} ${getDisplayDate(item)} ${getNote(item)}`.toLowerCase();
       return text.includes(query.toLowerCase());
     }
 
@@ -2205,9 +2216,9 @@
             </td>
             <td class="col-category strike-cell"><span class="type-badge">${highlightText(item.category, query)}</span></td>
             <td class="col-payment strike-cell">${highlightText(getPaymentType(item), query)}</td>
-            <td class="col-date strike-cell">${highlightText(item.date, query)}</td>
+            <td class="col-date strike-cell">${highlightText(getDisplayDate(item), query)}</td>
             <td class="col-paid">
-              ${renderPaidMarks(item, listType)}
+              ${renderPaymentCell(item, listType)}
             </td>
             <td class="col-rising">
               <input class="rising-check" type="checkbox" ${isRisingTe(item) ? "checked" : ""} aria-label="상승테 여부 표시" />
@@ -2238,46 +2249,48 @@
             }
           });
 
-          row.querySelectorAll(".paid-mark-check").forEach((checkbox) => {
-            checkbox.addEventListener("change", async (event) => {
-              const paidKey = event.target.dataset.paidKey;
+          if (item.category === "판매") {
+            row.querySelectorAll(".paid-mark-check").forEach((checkbox) => {
+              checkbox.addEventListener("change", async (event) => {
+                const paidKey = event.target.dataset.paidKey;
 
-              try {
-                if (item.__source === "shared") {
-                  const currentMarks = normalizePaidMarks(item, listType);
+                try {
+                  if (item.__source === "shared") {
+                    const currentMarks = normalizePaidMarks(item, listType);
 
-                  await updateSharedItemState(listType, item.id, {
-                    paidMarks: {
-                      ...currentMarks,
-                      [paidKey]: event.target.checked
-                    },
-                    paid: false
-                  });
-                } else {
-                  const source = getPersonalEntriesForList(listType);
-
-                  const nextEntries = source.map((entry) => {
-                    if (entry.id !== item.id) return entry;
-
-                    const currentMarks = normalizePaidMarks(entry, listType);
-                    return {
-                      ...entry,
+                    await updateSharedItemState(listType, item.id, {
                       paidMarks: {
                         ...currentMarks,
                         [paidKey]: event.target.checked
                       },
                       paid: false
-                    };
-                  });
+                    });
+                  } else {
+                    const source = getPersonalEntriesForList(listType);
 
-                  await saveEntriesForList(listType, nextEntries);
+                    const nextEntries = source.map((entry) => {
+                      if (entry.id !== item.id) return entry;
+
+                      const currentMarks = normalizePaidMarks(entry, listType);
+                      return {
+                        ...entry,
+                        paidMarks: {
+                          ...currentMarks,
+                          [paidKey]: event.target.checked
+                        },
+                        paid: false
+                      };
+                    });
+
+                    await saveEntriesForList(listType, nextEntries);
+                  }
+                } catch (error) {
+                  console.error(error);
+                  showToast("지급여부 저장에 실패했습니다.");
                 }
-              } catch (error) {
-                console.error(error);
-                showToast("지급여부 저장에 실패했습니다.");
-              }
+              });
             });
-          });
+          }
 
           row.querySelector(".rising-check").addEventListener("change", async (event) => {
             try {
@@ -2396,7 +2409,7 @@
       saveEntryBtn.classList.toggle("hidden", Boolean(isSharedItem));
 
       nicknameInput.value = item?.nickname ?? "";
-      dateInput.value = item?.date ?? "";
+      dateInput.value = item?.category === "판매" ? (item?.date ?? "") : "";
       noteInput.value = getNote(item);
       selectedCategory = item?.category ?? "판매";
       selectedPaymentType = item?.__source === "shared" ? "길드지급" : (item?.paymentType ?? "개인지급");
@@ -2592,12 +2605,14 @@
 
           const category = parseExcelCategory(getExcelCell(row, ["구분", "분류", "category"]));
           const paymentType = parseExcelPaymentType(getExcelCell(row, ["지급방식", "지급", "payment", "paymentType"]));
-          const date = normalizeDateInput(getExcelCell(row, ["지급시기", "날짜", "date"]));
+          const date = category === "판매"
+            ? normalizeDateInput(getExcelCell(row, ["지급시기", "날짜", "date"]))
+            : "";
           const note = getExcelCell(row, ["비고", "메모", "note", "memo"]);
           const risingTe = parseExcelBoolean(getExcelCell(row, ["상승테 여부", "상승테", "상승", "risingTe"]));
           const done = parseExcelBoolean(getExcelCell(row, ["완료", "받음", "받은여부", "done"]));
 
-          if (!isValidDateText(date)) {
+          if (category === "판매" && !isValidDateText(date)) {
             skippedCount += 1;
             continue;
           }
@@ -2716,7 +2731,9 @@
             .map((name) => name.trim().replace(/\s+/g, " "))
             .filter(Boolean);
 
-      const date = normalizeDateInput(dateInput.value.trim());
+      const date = selectedCategory === "판매"
+        ? normalizeDateInput(dateInput.value.trim())
+        : "";
       const note = noteInput.value.trim();
 
       if (nicknameList.length === 0) {
@@ -2725,8 +2742,8 @@
         return;
       }
 
-      if (!isValidDateText(date)) {
-        showToast("지급시기는 4/28 또는 10/03, 보류처럼 입력해주세요.");
+      if (selectedCategory === "판매" && !isValidDateText(date)) {
+        showToast("판매 항목의 지급시기는 4/28 또는 10/03, 보류처럼 입력해주세요.");
         dateInput.focus();
         return;
       }
