@@ -187,7 +187,7 @@
 
     table {
       width: 100%;
-      min-width: 1240px;
+      min-width: 1370px;
       border-collapse: collapse;
       table-layout: fixed;
       background: #fff;
@@ -249,6 +249,28 @@
 
     .col-paid {
       width: 190px;
+    }
+
+    .col-status {
+      width: 130px;
+    }
+
+    .status-select {
+      width: 100%;
+      height: 34px;
+      padding: 0 8px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 800;
+      outline: none;
+    }
+
+    .status-select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-soft);
     }
 
     .col-edit {
@@ -837,7 +859,7 @@
     }
 
     .dual-panel table {
-      min-width: 820px;
+      min-width: 930px;
       font-size: 12px;
     }
 
@@ -863,6 +885,16 @@
 
     .dual-panel .col-paid {
       width: 120px;
+    }
+
+    .dual-panel .col-status {
+      width: 108px;
+    }
+
+    .dual-panel .status-select {
+      height: 30px;
+      padding: 0 5px;
+      font-size: 11px;
     }
 
     .dual-panel .col-edit {
@@ -1111,6 +1143,7 @@
                     <th class="col-payment">지급방식</th>
                     <th class="col-date">지급시기</th>
                     <th class="col-paid">지급여부</th>
+                    <th class="col-status">상태</th>
                     <th class="col-rising">상승테 여부</th>
                     <th class="col-edit">수정</th>
                     <th class="col-note">비고</th>
@@ -1137,6 +1170,7 @@
                     <th class="col-payment">지급방식</th>
                     <th class="col-date">지급시기</th>
                     <th class="col-paid">지급여부</th>
+                    <th class="col-status">상태</th>
                     <th class="col-rising">상승테 여부</th>
                     <th class="col-edit">수정</th>
                     <th class="col-note">비고</th>
@@ -1203,6 +1237,7 @@
                 <th class="col-payment">지급방식</th>
                 <th class="col-date">지급시기</th>
                 <th class="col-paid">지급여부</th>
+                <th class="col-status">상태</th>
                 <th class="col-rising">상승테 여부</th>
                 <th class="col-edit">수정</th>
                 <th class="col-note">비고</th>
@@ -1447,6 +1482,14 @@
       }, 1800);
     }
 
+    function isAdminRole() {
+      return currentProfile?.role === "admin";
+    }
+
+    function canManageSharedStaff() {
+      return currentProfile?.role === "admin" || currentProfile?.role === "staff";
+    }
+
     const DEFAULT_AUTH_NOTICE = "회원가입 후 관리자 승인까지 시간이 걸릴 수 있습니다. 승인 전에는 목록을 이용할 수 없습니다.";
     const DEFAULT_HOME_NOTICE = "명단 추가 시 개인지급/길드지급과 엽서종류를 확인해주세요. 관리자가 추가한 공통 길드지급 항목은 모든 승인 사용자에게 표시됩니다.";
 
@@ -1481,7 +1524,7 @@
     }
 
     async function openNoticeScreen() {
-      if (currentProfile?.role !== "admin") {
+      if (!isAdminRole()) {
         showToast("관리자만 공지를 수정할 수 있습니다.");
         return;
       }
@@ -1491,7 +1534,7 @@
     }
 
     async function saveNoticeSettings() {
-      if (currentProfile?.role !== "admin") {
+      if (!isAdminRole()) {
         showToast("관리자만 공지를 수정할 수 있습니다.");
         return;
       }
@@ -1589,7 +1632,7 @@
       const snapshot = await getDoc(sharedRef);
 
       if (!snapshot.exists()) {
-        if (currentProfile?.role !== "admin") return;
+        if (!canManageSharedStaff()) return;
 
         await setDoc(
           sharedRef,
@@ -1657,6 +1700,7 @@
             done: Boolean(state.done),
             paidMarks: state.paidMarks || {},
             risingTe: Boolean(state.risingTe),
+            status: state.status || entry.status || "미지급",
             paid: false,
             __source: "shared"
           };
@@ -2101,9 +2145,34 @@
       return item?.category === "판매" ? (item.date || "") : "";
     }
 
+    const STATUS_OPTIONS = ["미지급", "접선대기중", "접메완", "지급중", "지급완"];
+
+    function getStatus(item) {
+      return item?.status || "미지급";
+    }
+
+    function normalizeStatus(value) {
+      const raw = String(value || "").trim();
+      return STATUS_OPTIONS.includes(raw) ? raw : "미지급";
+    }
+
     function renderPaymentCell(item, listType = currentListType) {
       if (item?.category !== "판매") return "";
       return renderPaidMarks(item, listType);
+    }
+
+    function renderStatusCell(item) {
+      if (item?.category !== "판매") return "";
+
+      const currentStatus = normalizeStatus(getStatus(item));
+
+      return `
+        <select class="status-select" aria-label="상태 선택">
+          ${STATUS_OPTIONS.map((status) => `
+            <option value="${status}" ${status === currentStatus ? "selected" : ""}>${status}</option>
+          `).join("")}
+        </select>
+      `;
     }
 
     function getPaidMarkOptions(listType = currentListType) {
@@ -2338,7 +2407,7 @@
     function rowMatchesQuery(item, query) {
       if (!query) return false;
 
-      const text = `${item.nickname} ${item.category} ${getPaymentType(item)} ${getDisplayDate(item)} ${getNote(item)}`.toLowerCase();
+      const text = `${item.nickname} ${item.category} ${getPaymentType(item)} ${getDisplayDate(item)} ${item.category === "판매" ? getStatus(item) : ""} ${getNote(item)}`.toLowerCase();
       return text.includes(query.toLowerCase());
     }
 
@@ -2364,7 +2433,7 @@
 
         const groupRow = document.createElement("tr");
         groupRow.className = "group-row";
-        groupRow.innerHTML = `<td colspan="9">${getGroupLabel(category, sorted)}</td>`;
+        groupRow.innerHTML = `<td colspan="10">${getGroupLabel(category, sorted)}</td>`;
         tableBodyTarget.appendChild(groupRow);
 
         groupEntries.forEach((item) => {
@@ -2394,6 +2463,9 @@
             <td class="col-date strike-cell">${highlightText(getDisplayDate(item), query)}</td>
             <td class="col-paid">
               ${renderPaymentCell(item, listType)}
+            </td>
+            <td class="col-status">
+              ${renderStatusCell(item)}
             </td>
             <td class="col-rising">
               <input class="rising-check" type="checkbox" ${isRisingTe(item) ? "checked" : ""} aria-label="상승테 여부 표시" />
@@ -2464,6 +2536,31 @@
                   showToast("지급여부 저장에 실패했습니다.");
                 }
               });
+            });
+          }
+
+          const statusSelect = row.querySelector(".status-select");
+          if (statusSelect) {
+            statusSelect.addEventListener("change", async (event) => {
+              const status = normalizeStatus(event.target.value);
+
+              try {
+                if (item.__source === "shared") {
+                  await updateSharedItemState(listType, item.id, {
+                    status
+                  });
+                } else {
+                  const source = getPersonalEntriesForList(listType);
+                  const nextEntries = source.map((entry) =>
+                    entry.id === item.id ? { ...entry, status } : entry
+                  );
+
+                  await saveEntriesForList(listType, nextEntries);
+                }
+              } catch (error) {
+                console.error(error);
+                showToast("상태 저장에 실패했습니다.");
+              }
             });
           }
 
@@ -2580,7 +2677,7 @@
       const isSharedItem = editingId && editingSource === "shared";
       modalTitle.textContent = isSharedItem ? "공통 길드지급 항목 관리" : (editingId ? "명단 수정" : "명단 추가");
       deleteEntryBtn.classList.toggle("hidden", !editingId);
-      deleteAllEntryBtn.classList.toggle("hidden", !(isSharedItem && currentProfile?.role === "admin"));
+      deleteAllEntryBtn.classList.toggle("hidden", !(isSharedItem && canManageSharedStaff()));
       saveEntryBtn.classList.toggle("hidden", Boolean(isSharedItem));
 
       nicknameInput.value = item?.nickname ?? "";
@@ -2785,6 +2882,9 @@
             ? normalizeDateInput(getExcelCell(row, ["지급시기", "날짜", "date"]))
             : "";
           const note = getExcelCell(row, ["비고", "메모", "note", "memo"]);
+          const status = category === "판매"
+            ? normalizeStatus(getExcelCell(row, ["상태", "상태창", "지급상태", "status"]))
+            : "";
           const risingTe = parseExcelBoolean(getExcelCell(row, ["상승테 여부", "상승테", "상승", "risingTe"]));
           const done = parseExcelBoolean(getExcelCell(row, ["완료", "받음", "받은여부", "done"]));
 
@@ -2794,7 +2894,7 @@
           }
 
           for (const listType of listTypes) {
-            const shouldSaveAsShared = paymentType === "길드지급" && currentProfile?.role === "admin";
+            const shouldSaveAsShared = paymentType === "길드지급" && canManageSharedStaff();
             const targetKey = `${shouldSaveAsShared ? "shared" : "personal"}:${listType}`;
 
             if (!targetEntries[targetKey]) {
@@ -2831,6 +2931,7 @@
               date,
               note,
               done,
+              status,
               paid: false,
               paidMarks: normalizePaidMarks({}, listType),
               risingTe,
@@ -2926,7 +3027,7 @@
 
       const shouldSaveAsShared = !editingId
         && selectedPaymentType === "길드지급"
-        && currentProfile?.role === "admin";
+        && canManageSharedStaff();
 
       try {
         const entriesByTarget = {};
@@ -2986,6 +3087,7 @@
               paymentType: selectedPaymentType,
               date,
               note,
+              status: selectedCategory === "판매" ? normalizeStatus(entry.status) : "",
               paidMarks: normalizePaidMarks(entry, targetListType),
               paid: false
             };
@@ -3010,6 +3112,7 @@
                 paymentType: shouldSaveAsShared ? "길드지급" : selectedPaymentType,
                 date,
                 note,
+                status: selectedCategory === "판매" ? "미지급" : "",
                 done: false,
                 paid: false,
                 paidMarks: normalizePaidMarks({}, listType),
@@ -3087,8 +3190,8 @@
       const targetListType = modalListType || currentListType;
       if (!targetListType) return;
 
-      if (currentProfile?.role !== "admin") {
-        showToast("관리자만 사용할 수 있습니다.");
+      if (!canManageSharedStaff()) {
+        showToast("권한이 있는 계정만 사용할 수 있습니다.");
         return;
       }
 
