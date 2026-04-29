@@ -254,6 +254,10 @@
       width: 95px;
     }
 
+    .col-note {
+      width: 120px;
+    }
+
     .group-row td {
       height: 40px;
       padding: 8px 14px;
@@ -551,6 +555,95 @@
       box-shadow: var(--shadow);
     }
 
+    .notice-card {
+      margin: 18px 0 20px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #f8f9ff;
+    }
+
+    .notice-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .notice-head h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .notice-small-btn {
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 10px;
+      background: #444;
+      font-size: 13px;
+    }
+
+    .notice-text {
+      min-height: 24px;
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .notice-editor {
+      margin-top: 12px;
+    }
+
+    .notice-editor textarea {
+      width: 100%;
+      min-height: 96px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      resize: vertical;
+      font: inherit;
+      outline: none;
+    }
+
+    .notice-editor textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px var(--primary-soft);
+    }
+
+    .notice-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .note-btn {
+      max-width: 100%;
+      height: 32px;
+      padding: 0 10px;
+      border-radius: 10px;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 800;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .note-btn.empty-note {
+      color: var(--muted);
+      background: var(--soft);
+    }
+
     @media (max-width: 720px) {
       .app {
         width: min(100% - 18px, 1100px);
@@ -717,7 +810,7 @@
     }
 
     .dual-panel table {
-      min-width: 730px;
+      min-width: 820px;
       font-size: 13px;
     }
 
@@ -747,6 +840,10 @@
 
     .dual-panel .col-edit {
       width: 64px;
+    }
+
+    .dual-panel .col-note {
+      width: 90px;
     }
 
     .dual-panel th,
@@ -825,6 +922,24 @@
           <button id="logoutBtn" type="button" class="small-btn">로그아웃</button>
         </div>
 
+        <section class="notice-card">
+          <div class="notice-head">
+            <h2>공지</h2>
+            <button id="noticeEditBtn" type="button" class="notice-small-btn hidden">공지 수정</button>
+          </div>
+
+          <p id="noticeText" class="notice-text">공지 불러오는 중...</p>
+
+          <div id="noticeEditor" class="notice-editor hidden">
+            <textarea id="noticeInput" maxlength="300" placeholder="공지 내용을 입력하세요. 최대 300자"></textarea>
+            <div class="notice-actions">
+              <span id="noticeCount">0/300</span>
+              <button id="noticeCancelBtn" type="button" class="cancel-btn">취소</button>
+              <button id="noticeSaveBtn" type="button">저장</button>
+            </div>
+          </div>
+        </section>
+
         <div class="big-buttons home-buttons">
           <button id="sebaeBtn" type="button" class="big-btn">세배엽 목록</button>
           <button id="fourthBtn" type="button" class="big-btn">4기엽 목록</button>
@@ -900,6 +1015,7 @@
                     <th class="col-status">지급상태</th>
                     <th class="col-paid">지급여부</th>
                     <th class="col-edit">수정</th>
+                    <th class="col-note">비고</th>
                   </tr>
                 </thead>
                 <tbody id="combinedSebaeBody"></tbody>
@@ -924,6 +1040,7 @@
                     <th class="col-status">지급상태</th>
                     <th class="col-paid">지급여부</th>
                     <th class="col-edit">수정</th>
+                    <th class="col-note">비고</th>
                   </tr>
                 </thead>
                 <tbody id="combinedFourthBody"></tbody>
@@ -972,6 +1089,7 @@
                 <th class="col-status">지급상태</th>
                 <th class="col-paid">지급여부</th>
                 <th class="col-edit">수정</th>
+                    <th class="col-note">비고</th>
               </tr>
             </thead>
             <tbody id="tableBody"></tbody>
@@ -1092,6 +1210,8 @@
     let entriesByList = { sebae: [], fourth: [] };
     let unsubscribeList = null;
     let combinedUnsubscribes = [];
+    let unsubscribeNotice = null;
+    let currentProfile = null;
     let editingId = null;
     let modalListType = null;
     let selectedCategory = "판매";
@@ -1110,6 +1230,13 @@
     const passwordInput = document.getElementById("passwordInput");
     const authMessage = document.getElementById("authMessage");
     const userEmail = document.getElementById("userEmail");
+    const noticeText = document.getElementById("noticeText");
+    const noticeEditBtn = document.getElementById("noticeEditBtn");
+    const noticeEditor = document.getElementById("noticeEditor");
+    const noticeInput = document.getElementById("noticeInput");
+    const noticeCount = document.getElementById("noticeCount");
+    const noticeCancelBtn = document.getElementById("noticeCancelBtn");
+    const noticeSaveBtn = document.getElementById("noticeSaveBtn");
 
     const signupBtn = document.getElementById("signupBtn");
     const loginBtn = document.getElementById("loginBtn");
@@ -1180,6 +1307,90 @@
       showToast.timer = setTimeout(() => {
         toast.classList.add("hidden");
       }, 1800);
+    }
+
+    function isCurrentAdmin() {
+      return currentProfile?.role === "admin";
+    }
+
+    function getNoticeRef() {
+      return doc(db, "settings", "homeNotice");
+    }
+
+    function updateNoticeCounter() {
+      noticeCount.textContent = `${noticeInput.value.length}/300`;
+    }
+
+    function setNoticeEditorVisible(visible) {
+      noticeEditor.classList.toggle("hidden", !visible);
+      if (visible) {
+        noticeInput.value = noticeText.dataset.rawText || "";
+        updateNoticeCounter();
+        setTimeout(() => noticeInput.focus(), 0);
+      }
+    }
+
+    function startNoticeSubscription() {
+      if (unsubscribeNotice) {
+        unsubscribeNotice();
+        unsubscribeNotice = null;
+      }
+
+      unsubscribeNotice = onSnapshot(
+        getNoticeRef(),
+        (snapshot) => {
+          const data = snapshot.data();
+          const text = String(data?.text || "").trim();
+
+          noticeText.dataset.rawText = text;
+          noticeText.textContent = text || "등록된 공지가 없습니다.";
+        },
+        (error) => {
+          console.error(error);
+          noticeText.textContent = "공지를 불러오지 못했습니다.";
+        }
+      );
+    }
+
+    function stopNoticeSubscription() {
+      if (unsubscribeNotice) {
+        unsubscribeNotice();
+        unsubscribeNotice = null;
+      }
+    }
+
+    function updateNoticeAdminUi() {
+      noticeEditBtn.classList.toggle("hidden", !isCurrentAdmin());
+      if (!isCurrentAdmin()) {
+        setNoticeEditorVisible(false);
+      }
+    }
+
+    async function saveNotice() {
+      if (!isCurrentAdmin()) {
+        showToast("관리자만 공지를 수정할 수 있습니다.");
+        return;
+      }
+
+      const text = noticeInput.value.trim();
+
+      try {
+        await setDoc(
+          getNoticeRef(),
+          {
+            text,
+            updatedAt: serverTimestamp(),
+            updatedBy: currentUser?.email || ""
+          },
+          { merge: true }
+        );
+
+        setNoticeEditorVisible(false);
+        showToast("공지를 저장했습니다.");
+      } catch (error) {
+        console.error(error);
+        showToast("공지 저장에 실패했습니다.");
+      }
     }
 
     async function ensureUserProfile(user) {
@@ -1757,10 +1968,32 @@
       return `${before}<mark>${match}</mark>${after}`;
     }
 
+    function getNoteText(item) {
+      return String(item?.note || "").slice(0, 20);
+    }
+
+    function renderNoteButton(item) {
+      const note = getNoteText(item);
+      return `
+        <button type="button" class="note-btn ${note ? "" : "empty-note"}" title="${escapeHtml(note || "비고 추가")}">
+          ${escapeHtml(note || "비고")}
+        </button>
+      `;
+    }
+
+    async function updateEntryNote(listType, itemId, note) {
+      const source = getEntriesForList(listType);
+      const nextEntries = source.map((entry) =>
+        entry.id === itemId ? { ...entry, note } : entry
+      );
+
+      await saveEntriesForList(listType, nextEntries);
+    }
+
     function rowMatchesQuery(item, query) {
       if (!query) return false;
 
-      const text = `${item.nickname} ${item.category} ${getPaymentType(item)} ${item.date} ${getPaymentStatus(item)}`.toLowerCase();
+      const text = `${item.nickname} ${item.category} ${getPaymentType(item)} ${item.date} ${getPaymentStatus(item)} ${item.note || ""}`.toLowerCase();
       return text.includes(query.toLowerCase());
     }
 
@@ -1784,7 +2017,7 @@
 
         const groupRow = document.createElement("tr");
         groupRow.className = "group-row";
-        groupRow.innerHTML = `<td colspan="8">${getGroupLabel(category, sorted)}</td>`;
+        groupRow.innerHTML = `<td colspan="9">${getGroupLabel(category, sorted)}</td>`;
         tableBodyTarget.appendChild(groupRow);
 
         groupEntries.forEach((item) => {
@@ -1822,6 +2055,9 @@
             </td>
             <td class="col-edit">
               <button type="button" class="edit-btn">수정</button>
+            </td>
+            <td class="col-note">
+              ${renderNoteButton(item)}
             </td>
           `;
 
@@ -1909,6 +2145,24 @@
           });
 
           row.querySelector(".edit-btn").addEventListener("click", () => openModal(item, listType));
+
+          row.querySelector(".note-btn").addEventListener("click", async () => {
+            const currentNote = getNoteText(item);
+            const input = prompt("비고를 입력하세요. 최대 20글자입니다.", currentNote);
+
+            if (input === null) return;
+
+            const nextNote = String(input).trim().slice(0, 20);
+
+            try {
+              await updateEntryNote(listType, item.id, nextNote);
+              showToast("비고를 저장했습니다.");
+            } catch (error) {
+              console.error(error);
+              showToast("비고 저장에 실패했습니다.");
+            }
+          });
+
           tableBodyTarget.appendChild(row);
 
           if (isMatched && !firstMatchedRow) {
@@ -2052,6 +2306,7 @@
         category,
         paymentType,
         date,
+        note: "",
         paymentStatus: "미지급",
         done: false,
         paid: false,
@@ -2356,15 +2611,19 @@
     entriesByList = { sebae: [], fourth: [] };
     clearSingleSubscription();
     clearCombinedSubscriptions();
+    currentProfile = null;
+    stopNoticeSubscription();
     userEmail.textContent = "";
     if (pendingEmail) pendingEmail.textContent = "";
     adminBtn.classList.add("hidden");
+    updateNoticeAdminUi();
     showScreen("auth");
     return;
   }
 
   try {
     const profile = await ensureUserProfile(user);
+    currentProfile = profile;
 
     if (profile.approved === true) {
   userEmail.textContent = `${user.email} 계정으로 로그인 중`;
@@ -2375,9 +2634,14 @@
     adminBtn.classList.add("hidden");
   }
 
+  updateNoticeAdminUi();
+  startNoticeSubscription();
+
   showScreen("home");
   } 
     else {
+      stopNoticeSubscription();
+      updateNoticeAdminUi();
       pendingEmail.textContent = `${user.email} 계정은 현재 승인 대기 중입니다.`;
       showScreen("pending");
     }
@@ -2398,6 +2662,11 @@
 
     addEntryBtn.addEventListener("click", () => openModal());
     importExcelBtn.addEventListener("click", importExcelEntries);
+
+    noticeEditBtn.addEventListener("click", () => setNoticeEditorVisible(true));
+    noticeCancelBtn.addEventListener("click", () => setNoticeEditorVisible(false));
+    noticeSaveBtn.addEventListener("click", saveNotice);
+    noticeInput.addEventListener("input", updateNoticeCounter);
 
     searchInput.addEventListener("input", () => {
       renderEntries();
