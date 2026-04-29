@@ -2758,10 +2758,11 @@
 
         const targetEntries = {};
         const duplicateListNames = [];
+        const importStartedAt = Date.now();
         let importedCount = 0;
         let skippedCount = 0;
 
-        for (const row of rows) {
+        for (const [rowIndex, row] of rows.entries()) {
           const nickname = getExcelCell(row, ["닉네임", "닉", "이름", "name", "nickname"])
             .trim()
             .replace(/\s+/g, " ");
@@ -2833,7 +2834,7 @@
               paid: false,
               paidMarks: normalizePaidMarks({}, listType),
               risingTe,
-              createdAt: Date.now(),
+              createdAt: importStartedAt + rowIndex,
               createdBy: currentUser.uid,
               createdByEmail: currentUser.email,
               shared: shouldSaveAsShared
