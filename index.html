@@ -2477,15 +2477,25 @@
           `;
 
           row.querySelector(".done-check").addEventListener("change", async (event) => {
+            const checked = event.target.checked;
+            const shouldSetPaidDone = checked && item.category === "판매";
+
             try {
               if (item.__source === "shared") {
                 await updateSharedItemState(listType, item.id, {
-                  done: event.target.checked
+                  done: checked,
+                  ...(shouldSetPaidDone ? { status: "지급완" } : {})
                 });
               } else {
                 const source = getPersonalEntriesForList(listType);
                 const nextEntries = source.map((entry) =>
-                  entry.id === item.id ? { ...entry, done: event.target.checked } : entry
+                  entry.id === item.id
+                    ? {
+                        ...entry,
+                        done: checked,
+                        ...(shouldSetPaidDone ? { status: "지급완" } : {})
+                      }
+                    : entry
                 );
 
                 await saveEntriesForList(listType, nextEntries);
@@ -2505,12 +2515,16 @@
                   if (item.__source === "shared") {
                     const currentMarks = normalizePaidMarks(item, listType);
 
+                    const nextMarks = {
+                      ...currentMarks,
+                      [paidKey]: event.target.checked
+                    };
+                    const allPaidMarksChecked = getPaidMarkOptions(listType).every((option) => nextMarks[option.key] === true);
+
                     await updateSharedItemState(listType, item.id, {
-                      paidMarks: {
-                        ...currentMarks,
-                        [paidKey]: event.target.checked
-                      },
-                      paid: false
+                      paidMarks: nextMarks,
+                      paid: false,
+                      ...(allPaidMarksChecked ? { status: "지급완", done: true } : {})
                     });
                   } else {
                     const source = getPersonalEntriesForList(listType);
@@ -2519,13 +2533,17 @@
                       if (entry.id !== item.id) return entry;
 
                       const currentMarks = normalizePaidMarks(entry, listType);
+                      const nextMarks = {
+                        ...currentMarks,
+                        [paidKey]: event.target.checked
+                      };
+                      const allPaidMarksChecked = getPaidMarkOptions(listType).every((option) => nextMarks[option.key] === true);
+
                       return {
                         ...entry,
-                        paidMarks: {
-                          ...currentMarks,
-                          [paidKey]: event.target.checked
-                        },
-                        paid: false
+                        paidMarks: nextMarks,
+                        paid: false,
+                        ...(allPaidMarksChecked ? { status: "지급완", done: true } : {})
                       };
                     });
 
@@ -2543,16 +2561,24 @@
           if (statusSelect) {
             statusSelect.addEventListener("change", async (event) => {
               const status = normalizeStatus(event.target.value);
+              const shouldMarkDone = status === "지급완";
 
               try {
                 if (item.__source === "shared") {
                   await updateSharedItemState(listType, item.id, {
-                    status
+                    status,
+                    ...(shouldMarkDone ? { done: true } : {})
                   });
                 } else {
                   const source = getPersonalEntriesForList(listType);
                   const nextEntries = source.map((entry) =>
-                    entry.id === item.id ? { ...entry, status } : entry
+                    entry.id === item.id
+                      ? {
+                          ...entry,
+                          status,
+                          ...(shouldMarkDone ? { done: true } : {})
+                        }
+                      : entry
                   );
 
                   await saveEntriesForList(listType, nextEntries);
@@ -2886,7 +2912,7 @@
             ? normalizeStatus(getExcelCell(row, ["상태", "상태창", "지급상태", "status"]))
             : "";
           const risingTe = parseExcelBoolean(getExcelCell(row, ["상승테 여부", "상승테", "상승", "risingTe"]));
-          const done = parseExcelBoolean(getExcelCell(row, ["완료", "받음", "받은여부", "done"]));
+          const done = status === "지급완" || parseExcelBoolean(getExcelCell(row, ["완료", "받음", "받은여부", "done"]));
 
           if (category === "판매" && !isValidDateText(date)) {
             skippedCount += 1;
