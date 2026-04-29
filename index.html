@@ -2287,6 +2287,22 @@
         .toLowerCase();
     }
 
+    async function loadDuplicateCheckEntriesForList(listType) {
+      const [personalEntries, sharedEntries] = await Promise.all([
+        loadEntriesForList(listType),
+        loadSharedEntriesForList(listType)
+      ]);
+
+      return [
+        ...personalEntries
+          .filter((entry) => entry.deleted !== true)
+          .map((entry) => ({ ...entry, __duplicateSource: "개인" })),
+        ...sharedEntries
+          .filter((entry) => entry.deleted !== true)
+          .map((entry) => ({ ...entry, __duplicateSource: "공통" }))
+      ];
+    }
+
     function applyViewFilters(sourceEntries, listType) {
       return sourceEntries.filter((item) => {
         const categoryMatches = categoryFilter === "all" || item.category === categoryFilter;
@@ -2889,6 +2905,8 @@
 
         const targetEntries = {};
         const duplicateListNames = [];
+        const duplicateCheckEntriesByList = {};
+        const seenExcelNicknamesByList = { sebae: new Set(), fourth: new Set() };
         const importStartedAt = Date.now();
         let importedCount = 0;
         let skippedCount = 0;
@@ -2943,19 +2961,33 @@
               };
             }
 
+            if (!duplicateCheckEntriesByList[listType]) {
+              duplicateCheckEntriesByList[listType] = await loadDuplicateCheckEntriesForList(listType);
+            }
+
             const normalizedNickname = normalizeNicknameForCompare(nickname);
-            const hasDuplicate = targetEntries[targetKey].entries.some((entry) =>
-              entry.deleted !== true &&
+            const listName = listMeta[listType]?.title || listType;
+            const hasDuplicate = duplicateCheckEntriesByList[listType].some((entry) =>
               normalizeNicknameForCompare(entry.nickname) === normalizedNickname
             );
 
-            if (hasDuplicate) {
-              const label = `${listMeta[listType]?.title || listType}${targetEntries[targetKey].mode === "shared" ? " 공통" : ""}`;
+            if (seenExcelNicknamesByList[listType].has(normalizedNickname)) {
+              const label = `${listName}: ${nickname} 엑셀 입력값 중복`;
 
               if (!duplicateListNames.includes(label)) {
                 duplicateListNames.push(label);
               }
             }
+
+            if (hasDuplicate) {
+              const label = `${listName}: ${nickname} 기존 목록 중복`;
+
+              if (!duplicateListNames.includes(label)) {
+                duplicateListNames.push(label);
+              }
+            }
+
+            seenExcelNicknamesByList[listType].add(normalizedNickname);
 
             targetEntries[targetKey].entries.push({
               id: createId(),
@@ -2986,7 +3018,7 @@
 
         if (duplicateListNames.length > 0) {
           const ok = confirm(
-            `중복 닉네임이 있는 목록이 있습니다.\n\n${duplicateListNames.join(", ")}\n\n그래도 엑셀 데이터를 추가할까요?`
+            `중복 닉네임이 있습니다.\n\n${duplicateListNames.join("\n")}\n\n그래도 엑셀 데이터를 추가할까요?`
           );
 
           if (!ok) return;
@@ -3072,6 +3104,7 @@
             ? await loadSharedEntriesForList(listType)
             : await loadEntriesForList(listType);
 
+          const duplicateCheckEntries = await loadDuplicateCheckEntriesForList(listType);
           entriesByTarget[listType] = sourceEntries;
 
           const seenInInput = new Set();
@@ -3087,14 +3120,13 @@
 
             seenInInput.add(normalizedNickname);
 
-            const hasDuplicate = sourceEntries.some((entry) =>
+            const duplicateEntry = duplicateCheckEntries.find((entry) =>
               entry.id !== editingId &&
-              entry.deleted !== true &&
               normalizeNicknameForCompare(entry.nickname) === normalizedNickname
             );
 
-            if (hasDuplicate) {
-              duplicateItems.push(`${listName}: ${nickname}`);
+            if (duplicateEntry) {
+              duplicateItems.push(`${listName}: ${nickname} 기존 ${duplicateEntry.__duplicateSource} 목록 중복`);
             }
           });
         }
