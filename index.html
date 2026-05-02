@@ -6245,7 +6245,7 @@
       });
       document.querySelectorAll(".payment-btn").forEach((button) => {
         button.classList.toggle("active", button.dataset.paymentType === selectedPaymentType);
-        button.disabled = !canEditThisItem;
+        button.disabled = !canEditThisItem || isSharedItem;
       });
 
       modalBackdrop.classList.remove("hidden");
@@ -6268,6 +6268,7 @@
       const miscItems = getMiscPostcardItemsFromInputs();
       const priceGroups = selectedCategory === "판매" ? getMiscPriceGroupsFromInputs() : [];
       const shouldSaveAsShared = !editingId && selectedPaymentType === "길드지급" && canManageSharedStaff();
+      const actualPaymentType = (editingSource === "shared" || shouldSaveAsShared) ? "길드지급" : selectedPaymentType;
 
       if (nicknameList.length === 0) {
         showToast("닉네임을 입력해주세요.");
@@ -6309,7 +6310,7 @@
             ...currentEntry,
             nickname: nicknameList[0],
             category: selectedCategory,
-            paymentType: selectedPaymentType,
+            paymentType: actualPaymentType,
             date,
             note,
             miscPostcardItems: miscItems,
@@ -6342,7 +6343,7 @@
             id: createId(),
             nickname,
             category: selectedCategory,
-            paymentType: shouldSaveAsShared ? "길드지급" : selectedPaymentType,
+            paymentType: actualPaymentType,
             date,
             note,
             miscPostcardItems: miscItems,
@@ -6364,7 +6365,7 @@
             const merged = {
               ...existing,
               category: selectedCategory,
-              paymentType: shouldSaveAsShared ? "길드지급" : selectedPaymentType,
+              paymentType: actualPaymentType,
               date,
               note: note || existing.note || "",
               miscPostcardItems: [...normalizeMiscPostcardItems(existing.miscPostcardItems || []), ...miscItems],
@@ -6469,6 +6470,424 @@
     if (addMiscPostcardEtcBtn) addMiscPostcardEtcBtn.addEventListener("click", () => { addMiscPostcardEtcRow(); updateMiscRisingChoices(); });
     if (addMiscPriceEtcBtn) addMiscPriceEtcBtn.addEventListener("click", () => addMiscPriceEtcRow());
 
+
+
+    /* ===== v6 패치: 세배/4기 교환 지급여부 제거 + 일반 목록 수정 보강 ===== */
+    shouldRenderPaidMarks = function (item) {
+      return item?.category === "판매";
+    }
+
+    renderPaymentCell = function (item, listType = currentListType) {
+      if (!shouldRenderPaidMarks(item)) return "";
+      return renderPaidMarks(item, listType);
+    }
+
+    isPaymentComplete = function (item, listType = currentListType) {
+      if (item?.category !== "판매") return true;
+
+      if (listType === "misc") {
+        const marks = normalizePaidMarks(item, "misc");
+        const checkedOptionsComplete = getPaidMarkOptions("misc", item).every((option) => marks[option.key] === true);
+        const counts = normalizeMiscPaidCounts(item);
+        const countGroupsComplete = normalizePaidItemGroups(item?.paidItemGroups || [])
+          .filter((group) => toPositiveInteger(group.quantity) >= 3)
+          .every((group, groupIndex) => {
+            const key = getMiscPriceGroupKey(group, groupIndex);
+            return toPositiveInteger(counts[key]) >= toPositiveInteger(group.quantity);
+          });
+        return checkedOptionsComplete && countGroupsComplete;
+      }
+
+      const options = getPaidMarkOptions(listType, item);
+      if (options.length === 0) return true;
+      const marks = normalizePaidMarks(item, listType);
+      return options.every((option) => marks[option.key] === true);
+    }
+
+    calculateUsedPostcardSummary = function () {
+      const paidCounts = {};
+      const plannedCounts = {};
+
+      ["sebae", "fourth"].forEach((listType) => {
+        (entriesByList[listType] || []).forEach((item) => {
+          if (item?.category === "기부") return;
+
+          if (item?.category === "교환") {
+            const exchangeName = listType === "fourth" ? "4기엽" : "세배엽";
+            addUsageCountMiscPatch(plannedCounts, exchangeName, 1);
+            return;
+          }
+
+          if (item?.category !== "판매") return;
+
+          const groups = getPaidItemGroupsForItem(listType, item);
+          const marks = normalizePaidMarks(item, listType);
+          const options = getPaidMarkOptions(listType, item);
+          let optionOffset = 0;
+
+          groups.forEach((group) => {
+            const summaryName = group.summaryName || group.name || group.label;
+            const quantity = toPositiveInteger(group.quantity);
+            addUsageCountMiscPatch(plannedCounts, summaryName, quantity);
+
+            for (let unitIndex = 0; unitIndex < quantity; unitIndex += 1) {
+              const option = options[optionOffset + unitIndex];
+              if (option?.key && marks[option.key]) addUsageCountMiscPatch(paidCounts, summaryName, 1);
+            }
+
+            optionOffset += quantity;
+          });
+        });
+      });
+
+      (entriesByList.misc || []).forEach((item) => {
+        if (item?.category !== "판매") return;
+
+        const groups = normalizePaidItemGroups(item?.paidItemGroups || []);
+        const marks = normalizePaidMarks(item, "misc");
+        const paidCountsByGroup = normalizeMiscPaidCounts(item);
+
+        groups.forEach((group, groupIndex) => {
+          const summaryName = group.summaryName || group.name || group.label;
+          const quantity = toPositiveInteger(group.quantity);
+          addUsageCountMiscPatch(plannedCounts, summaryName, quantity);
+
+          if (quantity >= 3) {
+            addUsageCountMiscPatch(paidCounts, summaryName, paidCountsByGroup[getMiscPriceGroupKey(group, groupIndex)] || 0);
+            return;
+          }
+
+          for (let unitIndex = 0; unitIndex < quantity; unitIndex += 1) {
+            const key = `misc-${groupIndex + 1}-${unitIndex + 1}`;
+            if (marks[key]) addUsageCountMiscPatch(paidCounts, summaryName, 1);
+          }
+        });
+      });
+
+      return { paidCounts, plannedCounts };
+    }
+
+    function setStandardModalControlsDisabled(disabled) {
+      nicknameInput.disabled = disabled;
+      dateInput.disabled = disabled;
+      noteInput.disabled = disabled;
+      setListTypeFieldDisabled(disabled);
+      setCustomPaidItemInputsDisabled(disabled);
+
+      document.querySelectorAll(".seg-btn[data-category]").forEach((button) => {
+        button.disabled = disabled;
+      });
+
+      document.querySelectorAll(".payment-btn").forEach((button) => {
+        button.disabled = disabled;
+      });
+    }
+
+    function setCategoryButtonsActive(category) {
+      document.querySelectorAll(".seg-btn[data-category]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.category === category);
+      });
+    }
+
+    function setPaymentButtonsActive(paymentType) {
+      document.querySelectorAll(".payment-btn").forEach((button) => {
+        button.classList.toggle("active", button.dataset.paymentType === paymentType);
+      });
+    }
+
+    function openStandardModalV6(item = null, listType = currentListType) {
+      setModalModeForMisc(false);
+
+      modalListType = listType || currentListType;
+      editingId = item?.id ?? null;
+      editingSource = item?.__source || "personal";
+
+      const isSharedItem = editingId && editingSource === "shared";
+      const canEditThisItem = !isSharedItem || canManageSharedStaff();
+
+      modalTitle.textContent = isSharedItem
+        ? "공통 길드지급 항목 관리"
+        : (editingId ? "명단 수정" : "명단 추가");
+      deleteEntryBtn.classList.toggle("hidden", !editingId);
+      deleteAllEntryBtn.classList.toggle("hidden", !(isSharedItem && canManageSharedStaff()));
+      saveEntryBtn.classList.toggle("hidden", !canEditThisItem);
+
+      resetMiscComposerInputs();
+      resetCustomPaidItemInputs();
+
+      nicknameInput.value = item?.nickname ?? "";
+      dateInput.value = item?.category === "판매" ? (item?.date ?? "") : "";
+      noteInput.value = getNote(item);
+      selectedCategory = item?.category ?? "판매";
+      selectedPaymentType = item?.__source === "shared" ? "길드지급" : (item?.paymentType ?? "개인지급");
+
+      const defaultListType = modalListType || currentListType || "sebae";
+      const priceMode = item?.paidItemMode === "custom" ? "custom" : "default";
+      setSelectedListTypes(editingId
+        ? [{ listType: defaultListType, paidItemMode: priceMode }]
+        : [getDefaultTargetForModal(defaultListType)]
+      );
+
+      if (priceMode === "custom") {
+        setCustomPaidItemInputsFromGroups(item?.paidItemGroups || item?.customPaidItems || []);
+      }
+
+      syncCustomPaidItemsVisibility();
+      setCategoryButtonsActive(selectedCategory);
+      setPaymentButtonsActive(selectedPaymentType);
+      setStandardModalControlsDisabled(!canEditThisItem);
+
+      if (isSharedItem && canEditThisItem) {
+        selectedPaymentType = "길드지급";
+        setPaymentButtonsActive(selectedPaymentType);
+        document.querySelectorAll(".payment-btn").forEach((button) => {
+          button.disabled = true;
+        });
+      }
+
+      modalBackdrop.classList.remove("hidden");
+      setTimeout(() => nicknameInput.focus(), 0);
+    }
+
+    async function saveStandardEntryV6() {
+      const originalListType = modalListType || currentListType;
+      const selectedTargets = getSelectedPostcardTargets();
+
+      if (!editingId && selectedTargets.length === 0) {
+        showToast("엽서종류를 하나 이상 선택해주세요.");
+        return;
+      }
+
+      if (editingId) {
+        if (!originalListType) {
+          showToast("목록을 먼저 선택해주세요.");
+          return;
+        }
+
+        if (selectedTargets.length !== 1) {
+          showToast("수정할 때는 엽서종류를 하나만 선택해주세요.");
+          return;
+        }
+      }
+
+      if (editingSource === "shared" && !canManageSharedStaff()) {
+        showToast("공통 항목은 권한이 있는 계정만 수정할 수 있습니다.");
+        return;
+      }
+
+      const rawNickname = nicknameInput.value.trim();
+      const nicknameList = editingId
+        ? [rawNickname.replace(/\s+/g, " ")]
+        : rawNickname
+            .split(/[,，\n]/)
+            .map((name) => name.trim().replace(/\s+/g, " "))
+            .filter(Boolean);
+
+      const date = selectedCategory === "판매"
+        ? normalizeDateInput(dateInput.value.trim())
+        : "";
+      const note = noteInput.value.trim();
+
+      if (nicknameList.length === 0) {
+        showToast("닉네임을 입력해주세요.");
+        nicknameInput.focus();
+        return;
+      }
+
+      if (selectedCategory === "판매" && !isValidDateText(date)) {
+        showToast("판매 항목의 지급시기는 4/28 또는 10/03, 보류처럼 입력해주세요.");
+        dateInput.focus();
+        return;
+      }
+
+      const hasCustomTarget = selectedTargets.some((target) => target.paidItemMode === "custom");
+      let customPaidItemGroups = [];
+
+      if (hasCustomTarget) {
+        customPaidItemGroups = getCustomPaidItemGroupsFromInputs();
+        if (customPaidItemGroups.length === 0) {
+          showToast("기타 가격 구성의 엽서와 수량을 하나 이상 입력해주세요.");
+          return;
+        }
+      }
+
+      const saveAsShared = editingSource === "shared"
+        ? true
+        : (!editingId && selectedPaymentType === "길드지급" && canManageSharedStaff());
+      const actualPaymentType = saveAsShared ? "길드지급" : selectedPaymentType;
+
+      const loadEntries = saveAsShared ? loadSharedEntriesForList : loadEntriesForList;
+      const saveEntries = saveAsShared ? saveSharedEntriesForList : saveEntriesForList;
+
+      try {
+        if (editingId) {
+          const selectedTarget = selectedTargets[0];
+          const targetListType = selectedTarget.listType;
+          const originalEntries = await loadEntries(originalListType);
+          const currentEntry = originalEntries.find((entry) => entry.id === editingId);
+
+          if (!currentEntry) {
+            showToast("수정할 항목을 찾지 못했습니다.");
+            return;
+          }
+
+          const duplicateCheckEntries = await loadDuplicateCheckEntriesForList(targetListType);
+          const normalizedNickname = normalizeNicknameForCompare(nicknameList[0]);
+          const duplicateEntry = duplicateCheckEntries.find((entry) =>
+            entry.id !== editingId && normalizeNicknameForCompare(entry.nickname) === normalizedNickname
+          );
+
+          if (duplicateEntry) {
+            showToast(`${listMeta[targetListType]?.title || targetListType}에 이미 같은 닉네임이 있습니다.`);
+            return;
+          }
+
+          const paidItemData = selectedTarget.paidItemMode === "custom"
+            ? { paidItemMode: "custom", paidItemGroups: customPaidItemGroups }
+            : { paidItemMode: "default", paidItemGroups: [] };
+
+          const nextEntryBase = {
+            ...currentEntry,
+            nickname: nicknameList[0],
+            category: selectedCategory,
+            paymentType: actualPaymentType,
+            date,
+            note,
+            ...paidItemData,
+            status: selectedCategory === "판매" ? normalizeStatus(currentEntry.status) : "",
+            paid: false,
+            updatedAt: Date.now(),
+            updatedBy: currentUser.uid,
+            updatedByEmail: currentUser.email
+          };
+
+          const nextEntry = {
+            ...nextEntryBase,
+            paidMarks: selectedCategory === "판매"
+              ? normalizePaidMarks({ ...nextEntryBase, paidMarks: currentEntry.paidMarks }, targetListType)
+              : {}
+          };
+
+          if (targetListType === originalListType) {
+            await saveEntries(targetListType, originalEntries.map((entry) => entry.id === editingId ? nextEntry : entry));
+          } else {
+            const targetEntries = await loadEntries(targetListType);
+            await Promise.all([
+              saveEntries(originalListType, originalEntries.filter((entry) => entry.id !== editingId)),
+              saveEntries(targetListType, [...targetEntries, nextEntry])
+            ]);
+          }
+
+          closeModal();
+          showToast("수정했습니다.");
+          return;
+        }
+
+        const targetData = {};
+        const duplicateItems = [];
+
+        for (const target of selectedTargets) {
+          const listType = target.listType;
+          const sourceEntries = await loadEntries(listType);
+          targetData[listType] = sourceEntries;
+          const duplicateCheckEntries = await loadDuplicateCheckEntriesForList(listType);
+          const seenInInput = new Set();
+
+          nicknameList.forEach((nickname) => {
+            const normalizedNickname = normalizeNicknameForCompare(nickname);
+            const listName = listMeta[listType]?.title || listType;
+
+            if (seenInInput.has(normalizedNickname)) {
+              duplicateItems.push(`${listName}: ${nickname} 입력값 중복`);
+              return;
+            }
+
+            seenInInput.add(normalizedNickname);
+
+            const duplicateEntry = duplicateCheckEntries.find((entry) =>
+              normalizeNicknameForCompare(entry.nickname) === normalizedNickname
+            );
+
+            if (duplicateEntry) {
+              duplicateItems.push(`${listName}: ${nickname} 기존 목록 중복`);
+            }
+          });
+        }
+
+        if (duplicateItems.length > 0) {
+          showToast(`${duplicateItems.join(", ")} 은 중복이므로 명단 추가에서 제외되었습니다.`);
+        }
+
+        await Promise.all(selectedTargets.map(async (target) => {
+          const listType = target.listType;
+          const sourceEntries = targetData[listType] || [];
+          const duplicateCheckEntries = await loadDuplicateCheckEntriesForList(listType);
+          const paidItemData = target.paidItemMode === "custom"
+            ? { paidItemMode: "custom", paidItemGroups: customPaidItemGroups }
+            : { paidItemMode: "default", paidItemGroups: [] };
+
+          const newEntries = nicknameList
+            .filter((nickname, index, array) => {
+              const normalizedNickname = normalizeNicknameForCompare(nickname);
+              const firstIndex = array.findIndex((other) => normalizeNicknameForCompare(other) === normalizedNickname);
+              if (firstIndex !== index) return false;
+              return !duplicateCheckEntries.some((entry) => normalizeNicknameForCompare(entry.nickname) === normalizedNickname);
+            })
+            .map((nickname) => {
+              const entry = {
+                id: createId(),
+                nickname,
+                category: selectedCategory,
+                paymentType: actualPaymentType,
+                date,
+                note,
+                ...paidItemData,
+                status: selectedCategory === "판매" ? "미지급" : "",
+                done: false,
+                paid: false,
+                risingTe: false,
+                createdAt: Date.now(),
+                createdBy: currentUser.uid,
+                createdByEmail: currentUser.email,
+                shared: saveAsShared
+              };
+
+              return {
+                ...entry,
+                paidMarks: selectedCategory === "판매" ? normalizePaidMarks(entry, listType) : {}
+              };
+            });
+
+          if (newEntries.length === 0) return;
+          await saveEntries(listType, [...sourceEntries, ...newEntries]);
+        }));
+
+        closeModal();
+        showToast("저장했습니다.");
+      } catch (error) {
+        console.error(error);
+        showToast("저장에 실패했습니다.");
+      }
+    }
+
+    const previousOpenModalBeforeV6 = openModal;
+    openModal = function (item = null, listType = currentListType) {
+      if (listType === "misc") return previousOpenModalBeforeV6(item, listType);
+      return openStandardModalV6(item, listType);
+    }
+
+    const previousSaveEntryBeforeV6 = saveEntry;
+    saveEntry = async function () {
+      if (modalListType === "misc" || currentListType === "misc") return previousSaveEntryBeforeV6();
+      return saveStandardEntryV6();
+    }
+
+
+    /* ===== v7 공통 길드지급 원본 수정 보강 =====
+       - 관리자/스태프가 공통 항목을 수정하면 sharedLists 원본에 저장되어 전체 사용자에게 반영됩니다.
+       - 완료/지급체크/상태/상승테/숨김 같은 진행상태는 기존처럼 sharedStates에 저장됩니다.
+       - 공통 항목을 수정할 때 지급방식은 항상 길드지급으로 유지합니다.
+    */
     loadNoticeSettings();
 
     signupBtn.addEventListener("click", async () => {
