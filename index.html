@@ -173,7 +173,7 @@
 
     .toolbar {
       display: grid;
-      grid-template-columns: 1fr auto auto;
+      grid-template-columns: 1fr auto auto auto;
       gap: 10px;
       margin-bottom: 18px;
     }
@@ -762,6 +762,113 @@
       font-size: 14px;
     }
 
+    .goal-panel {
+      margin: -4px 0 18px;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+    }
+
+    .goal-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .goal-row input {
+      width: 180px;
+      height: 38px;
+      padding: 0 12px;
+      border: 1px solid #cfd3df;
+      border-radius: 12px;
+      outline: none;
+      font-weight: 900;
+      text-align: right;
+    }
+
+    .goal-row input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px var(--primary-soft);
+    }
+
+    .goal-stats {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .goal-progress-wrap {
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+    }
+
+    .goal-progress-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .goal-progress-bar {
+      width: 100%;
+      height: 16px;
+      border-radius: 999px;
+      background: #edf0f7;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+
+    .goal-progress-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #7c5cff, #26a269);
+      transition: width 0.25s ease;
+    }
+
+    .goal-message {
+      margin-top: 8px;
+      color: #4d5266;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .goal-stat {
+      min-height: 48px;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #f8f9ff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 3px;
+    }
+
+    .goal-stat span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .goal-stat b {
+      color: var(--primary);
+      font-size: 16px;
+      font-weight: 900;
+    }
+
     .sort-btn {
       height: 34px;
       padding: 0 12px;
@@ -923,6 +1030,14 @@
         grid-template-columns: 1fr;
       }
 
+      .goal-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .toolbar {
+        grid-template-columns: 1fr;
+      }
+
       .table-wrap,
       .dual-panel .table-wrap {
         overflow-x: auto;
@@ -1007,7 +1122,7 @@
         </div>
 
         <div class="admin-area">
-          <button id="adminBtn" type="button" class="small-btn hidden">승인 관리</button>
+          <button id="adminBtn" type="button" class="small-btn hidden">유저 관리</button>
           <button id="noticeAdminBtn" type="button" class="small-btn hidden">공지 수정</button>
           <button id="trashBtn" type="button" class="small-btn">휴지통</button>
       </div>
@@ -1044,24 +1159,46 @@
   <div class="card wide">
     <div class="top">
       <div>
-        <h1>승인 관리</h1>
-        <p>회원가입한 사용자들을 확인하고 승인할 수 있습니다.</p>
+        <h1>유저 관리</h1>
+        <p>가입 유저의 목표 명성, 현재 매입 명성, 현재 우칸과 승인 대기 유저를 확인할 수 있습니다.</p>
       </div>
       <button id="backAdminHomeBtn" type="button" class="small-btn">처음으로</button>
     </div>
 
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>이메일</th>
-            <th>승인 상태</th>
-            <th>역할</th>
-            <th>관리</th>
-          </tr>
-        </thead>
-        <tbody id="adminTableBody"></tbody>
-      </table>
+    <div class="request-panel">
+      <h2>유저 현황</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>닉네임</th>
+              <th>목표 명성</th>
+              <th>현재 매입 명성</th>
+              <th>전체 우칸 수</th>
+              <th>목표 도달 예상 우칸</th>
+              <th>남는/부족한 우칸</th>
+            </tr>
+          </thead>
+          <tbody id="adminUserStatusTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="request-panel" style="margin-top: 22px;">
+      <h2>승인 관리</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>이메일</th>
+              <th>닉네임</th>
+              <th>역할</th>
+              <th>관리</th>
+            </tr>
+          </thead>
+          <tbody id="adminPendingTableBody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 </section>
@@ -1106,6 +1243,7 @@
 
         <div class="toolbar">
           <input id="combinedSearchInput" type="text" placeholder="두 목록에서 검색어 입력" />
+          <button id="combinedExportBtn" type="button">엑셀로 내보내기</button>
         </div>
 
         <div class="sort-toolbar">
@@ -1117,6 +1255,54 @@
           <div class="sum-boxes">
             <span class="sum-box">받은 엽서 합계 : <b id="combinedReceivedTotal">0</b></span>
             <span class="sum-box">매입한 엽서 총 합계 : <b id="combinedPurchasedTotal">0</b></span>
+          </div>
+        </div>
+
+        <div class="goal-panel">
+          <div class="goal-row">
+            <span>목표 명성</span>
+            <input id="targetReputationInput" type="number" min="0" step="1" placeholder="목표 명성 입력" />
+            <span>현재 우칸</span>
+            <input id="currentMailboxCapacityInput" type="number" min="0" step="1" placeholder="보유 우칸 입력" />
+            <button id="saveTargetReputationBtn" type="button" class="small-btn">목표 저장</button>
+          </div>
+
+          <div class="goal-stats">
+            <div class="goal-stat">
+              <span>현재 매입한 총 명성</span>
+              <b id="currentPurchasedReputation">0</b>
+            </div>
+            <div class="goal-stat">
+              <span>현재 매입한 엽서 우칸</span>
+              <b id="currentMailboxSlots">0칸</b>
+            </div>
+            <div class="goal-stat">
+              <span>남은 명성</span>
+              <b id="remainingReputation">0</b>
+            </div>
+            <div class="goal-stat">
+              <span>추가 필요 깜엽</span>
+              <b id="requiredKkamLeaves">0개</b>
+            </div>
+            <div class="goal-stat">
+              <span>목표 명성 도달 시 채워지는 우칸의 양</span>
+              <b id="targetMailboxSlots">0칸</b>
+            </div>
+            <div class="goal-stat">
+              <span>남는/부족한 우칸</span>
+              <b id="mailboxSlotBalance">0칸</b>
+            </div>
+          </div>
+
+          <div class="goal-progress-wrap">
+            <div class="goal-progress-top">
+              <span>목표 달성률</span>
+              <b id="goalProgressPercent">0%</b>
+            </div>
+            <div class="goal-progress-bar">
+              <div id="goalProgressFill" class="goal-progress-fill"></div>
+            </div>
+            <div id="goalProgressMessage" class="goal-message">목표 명성을 입력하면 진행률이 표시됩니다.</div>
           </div>
         </div>
 
@@ -1200,6 +1386,7 @@
         <div class="toolbar">
           <input id="searchInput" type="text" placeholder="검색어 입력" />
           <button id="excelImportBtn" type="button">엑셀로 추가</button>
+          <button id="listExportBtn" type="button">엑셀로 내보내기</button>
           <button id="addEntryBtn" type="button">명단 추가</button>
           <input id="excelFileInput" class="hidden" type="file" accept=".xlsx,.xls,.csv" />
         </div>
@@ -1373,6 +1560,8 @@
     let sortDirection = "asc";
     let categoryFilter = "all";
     let paymentIncompleteOnly = false;
+    let targetReputation = 0;
+    let currentMailboxCapacity = 0;
 
     const authScreen = document.getElementById("authScreen");
     const pendingScreen = document.getElementById("pendingScreen");
@@ -1405,18 +1594,21 @@
     const backAdminHomeBtn = document.getElementById("backAdminHomeBtn");
     const backTrashHomeBtn = document.getElementById("backTrashHomeBtn");
     const backNoticeHomeBtn = document.getElementById("backNoticeHomeBtn");
-    const adminTableBody = document.getElementById("adminTableBody");
+    const adminUserStatusTableBody = document.getElementById("adminUserStatusTableBody");
+    const adminPendingTableBody = document.getElementById("adminPendingTableBody");
     const trashTableBody = document.getElementById("trashTableBody");
 
     const listTitle = document.getElementById("listTitle");
     const searchInput = document.getElementById("searchInput");
     const addEntryBtn = document.getElementById("addEntryBtn");
     const excelImportBtn = document.getElementById("excelImportBtn");
+    const listExportBtn = document.getElementById("listExportBtn");
     const excelFileInput = document.getElementById("excelFileInput");
     const tableBody = document.getElementById("tableBody");
     const emptyState = document.getElementById("emptyState");
     const listProgress = document.getElementById("listProgress");
     const combinedSearchInput = document.getElementById("combinedSearchInput");
+    const combinedExportBtn = document.getElementById("combinedExportBtn");
     const combinedSebaeBody = document.getElementById("combinedSebaeBody");
     const combinedFourthBody = document.getElementById("combinedFourthBody");
     const combinedSebaeEmpty = document.getElementById("combinedSebaeEmpty");
@@ -1427,6 +1619,18 @@
     const combinedPurchasedTotal = document.getElementById("combinedPurchasedTotal");
     const combinedSebaeProgress = document.getElementById("combinedSebaeProgress");
     const combinedFourthProgress = document.getElementById("combinedFourthProgress");
+    const targetReputationInput = document.getElementById("targetReputationInput");
+    const currentMailboxCapacityInput = document.getElementById("currentMailboxCapacityInput");
+    const saveTargetReputationBtn = document.getElementById("saveTargetReputationBtn");
+    const currentPurchasedReputation = document.getElementById("currentPurchasedReputation");
+    const currentMailboxSlots = document.getElementById("currentMailboxSlots");
+    const remainingReputation = document.getElementById("remainingReputation");
+    const requiredKkamLeaves = document.getElementById("requiredKkamLeaves");
+    const targetMailboxSlots = document.getElementById("targetMailboxSlots");
+    const mailboxSlotBalance = document.getElementById("mailboxSlotBalance");
+    const goalProgressPercent = document.getElementById("goalProgressPercent");
+    const goalProgressFill = document.getElementById("goalProgressFill");
+    const goalProgressMessage = document.getElementById("goalProgressMessage");
 
     const modalBackdrop = document.getElementById("modalBackdrop");
     const modalTitle = document.getElementById("modalTitle");
@@ -1488,6 +1692,10 @@
 
     function canManageSharedStaff() {
       return currentProfile?.role === "admin" || currentProfile?.role === "staff";
+    }
+
+    function getDisplayNameFromEmail(email) {
+      return String(email || "").split("@")[0] || "알 수 없음";
     }
 
     const DEFAULT_AUTH_NOTICE = "회원가입 후 관리자 승인까지 시간이 걸릴 수 있습니다. 승인 전에는 목록을 이용할 수 없습니다.";
@@ -1986,90 +2194,229 @@
 
       showScreen("home");
     }
-    async function openAdminScreen() {
-  if (!currentUser) return;
-
-  showScreen("admin");
-  adminTableBody.innerHTML = `
-    <tr>
-      <td colspan="4">사용자 목록을 불러오는 중입니다...</td>
-    </tr>
-  `;
-
-  try {
-    const usersSnapshot = await getDocs(collection(db, "users"));
-    const users = [];
-
-    usersSnapshot.forEach((docSnap) => {
-      users.push({
-        uid: docSnap.id,
-        ...docSnap.data()
-      });
-    });
-
-    users.sort((a, b) => String(a.email).localeCompare(String(b.email)));
-
-    if (users.length === 0) {
-      adminTableBody.innerHTML = `
-        <tr>
-          <td colspan="4">가입자가 없습니다.</td>
-        </tr>
-      `;
-      return;
+    async function loadUserListEntriesForAdmin(userId, listType) {
+      const snapshot = await getDoc(doc(db, "users", userId, "lists", listType));
+      const data = snapshot.data();
+      return Array.isArray(data?.entries) ? data.entries : [];
     }
 
-    adminTableBody.innerHTML = "";
+    async function loadUserSharedStateForAdmin(userId, listType) {
+      const snapshot = await getDoc(doc(db, "users", userId, "sharedStates", listType));
+      const data = snapshot.data();
+      return data?.states && typeof data.states === "object" ? data.states : {};
+    }
 
-    users.forEach((user) => {
-      const tr = document.createElement("tr");
+    function calculateAdminUserStats({ personalEntriesByListForUser, sharedEntriesByListForUser, sharedStatesByListForUser }) {
+      return ["sebae", "fourth"].reduce(
+        (acc, listType) => {
+          const personalEntries = personalEntriesByListForUser[listType] || [];
 
-      const approvedText = user.approved === true
-        ? `<span class="approved-text">승인됨</span>`
-        : `<span class="pending-text">대기중</span>`;
+          personalEntries
+            .filter((entry) => entry.deleted !== true)
+            .forEach((entry) => {
+              acc.purchased += getPostcardPointValue(listType, entry);
+              acc.postcardCount += 1;
+            });
 
-      const actionButton = user.approved === true
-        ? `-`
-        : `<button type="button" class="admin-approve-btn" data-uid="${user.uid}">승인</button>`;
+          const sharedStates = sharedStatesByListForUser[listType] || {};
 
-      tr.innerHTML = `
-        <td>${escapeHtml(user.email || "")}</td>
-        <td>${approvedText}</td>
-        <td>${escapeHtml(user.role || "user")}</td>
-        <td>${actionButton}</td>
-      `;
+          (sharedEntriesByListForUser[listType] || [])
+            .filter((entry) => entry.deleted !== true)
+            .forEach((entry) => {
+              const state = sharedStates[entry.id] || {};
+              if (state.hidden === true) return;
 
-      adminTableBody.appendChild(tr);
-    });
+              acc.purchased += getPostcardPointValue(listType, {
+                ...entry,
+                risingTe: Boolean(state.risingTe)
+              });
+              acc.postcardCount += 1;
+            });
 
-    document.querySelectorAll(".admin-approve-btn").forEach((button) => {
-      button.addEventListener("click", async () => {
-        const uid = button.dataset.uid;
-        const ok = confirm("이 사용자를 승인할까요?");
-        if (!ok) return;
+          return acc;
+        },
+        { purchased: 0, postcardCount: 0 }
+      );
+    }
 
-        try {
-          await updateDoc(doc(db, "users", uid), {
-            approved: true
-          });
+    async function loadAdminUserStatus(user, sharedEntriesForAdmin) {
+      const [
+        goalSnapshot,
+        sebaeEntries,
+        fourthEntries,
+        sebaeStates,
+        fourthStates
+      ] = await Promise.all([
+        getDoc(doc(db, "users", user.uid, "settings", "reputationGoal")),
+        loadUserListEntriesForAdmin(user.uid, "sebae"),
+        loadUserListEntriesForAdmin(user.uid, "fourth"),
+        loadUserSharedStateForAdmin(user.uid, "sebae"),
+        loadUserSharedStateForAdmin(user.uid, "fourth")
+      ]);
 
-          showToast("승인했습니다.");
-          openAdminScreen();
-        } catch (error) {
-          console.error(error);
-          showToast("승인에 실패했습니다.");
+      const goalData = goalSnapshot.data() || {};
+      const stats = calculateAdminUserStats({
+        personalEntriesByListForUser: {
+          sebae: sebaeEntries,
+          fourth: fourthEntries
+        },
+        sharedEntriesByListForUser: sharedEntriesForAdmin,
+        sharedStatesByListForUser: {
+          sebae: sebaeStates,
+          fourth: fourthStates
         }
       });
-    });
 
-  } catch (error) {
-    console.error(error);
-    adminTableBody.innerHTML = `
-      <tr>
-        <td colspan="4">사용자 목록을 불러오지 못했습니다.</td>
-      </tr>
-    `;
-  }
-}
+      const targetReputationValue = Number(goalData.targetReputation || 0);
+      const currentMailboxCapacityValue = Number(goalData.currentMailboxCapacity || 0);
+
+      const targetReputation = Number.isFinite(targetReputationValue) && targetReputationValue > 0 ? Math.floor(targetReputationValue) : 0;
+      const currentMailboxCapacity = Number.isFinite(currentMailboxCapacityValue) && currentMailboxCapacityValue > 0 ? Math.floor(currentMailboxCapacityValue) : 0;
+      const remainingReputation = Math.max(targetReputation - stats.purchased, 0);
+      const requiredKkamLeaves = remainingReputation > 0 ? Math.ceil(remainingReputation / 42) : 0;
+      const targetMailboxSlots = stats.postcardCount + requiredKkamLeaves;
+      const mailboxBalance = currentMailboxCapacity - targetMailboxSlots;
+
+      return {
+        nickname: getDisplayNameFromEmail(user.email),
+        targetReputation,
+        purchasedReputation: stats.purchased,
+        currentMailboxCapacity,
+        targetMailboxSlots,
+        mailboxBalance
+      };
+    }
+
+    async function openAdminScreen() {
+      if (!currentUser) return;
+
+      showScreen("admin");
+      adminUserStatusTableBody.innerHTML = `
+        <tr>
+          <td colspan="6">유저 현황을 불러오는 중입니다...</td>
+        </tr>
+      `;
+
+      adminPendingTableBody.innerHTML = `
+        <tr>
+          <td colspan="4">승인 대기 목록을 불러오는 중입니다...</td>
+        </tr>
+      `;
+
+      try {
+        const usersSnapshot = await getDocs(collection(db, "users"));
+        const users = [];
+
+        usersSnapshot.forEach((docSnap) => {
+          users.push({
+            uid: docSnap.id,
+            ...docSnap.data()
+          });
+        });
+
+        users.sort((a, b) => String(a.email).localeCompare(String(b.email)));
+
+        const approvedUsers = users.filter((user) => user.approved === true);
+        const pendingUsers = users.filter((user) => user.approved !== true);
+
+        if (approvedUsers.length === 0) {
+          adminUserStatusTableBody.innerHTML = `
+            <tr>
+              <td colspan="6">승인된 유저가 없습니다.</td>
+            </tr>
+          `;
+        } else {
+          const sharedEntriesForAdmin = {
+            sebae: await loadSharedEntriesForList("sebae"),
+            fourth: await loadSharedEntriesForList("fourth")
+          };
+
+          const userStatuses = await Promise.all(
+            approvedUsers.map((user) => loadAdminUserStatus(user, sharedEntriesForAdmin))
+          );
+
+          adminUserStatusTableBody.innerHTML = "";
+
+          userStatuses.forEach((status) => {
+            const tr = document.createElement("tr");
+
+            const balanceText = status.currentMailboxCapacity <= 0
+              ? "-"
+              : status.mailboxBalance >= 0
+                ? `${status.mailboxBalance.toLocaleString("ko-KR")}칸 남음`
+                : `${Math.abs(status.mailboxBalance).toLocaleString("ko-KR")}칸 부족`;
+
+            tr.innerHTML = `
+              <td>${escapeHtml(status.nickname)}</td>
+              <td>${status.targetReputation > 0 ? status.targetReputation.toLocaleString("ko-KR") : "-"}</td>
+              <td>${status.purchasedReputation.toLocaleString("ko-KR")}</td>
+              <td>${status.currentMailboxCapacity > 0 ? status.currentMailboxCapacity.toLocaleString("ko-KR") + "칸" : "-"}</td>
+              <td>${status.targetMailboxSlots.toLocaleString("ko-KR")}칸</td>
+              <td>${balanceText}</td>
+            `;
+
+            adminUserStatusTableBody.appendChild(tr);
+          });
+        }
+
+        if (pendingUsers.length === 0) {
+          adminPendingTableBody.innerHTML = `
+            <tr>
+              <td colspan="4">승인 대기 유저가 없습니다.</td>
+            </tr>
+          `;
+        } else {
+          adminPendingTableBody.innerHTML = "";
+
+          pendingUsers.forEach((user) => {
+            const tr = document.createElement("tr");
+
+            tr.innerHTML = `
+              <td>${escapeHtml(user.email || "")}</td>
+              <td>${escapeHtml(getDisplayNameFromEmail(user.email))}</td>
+              <td>${escapeHtml(user.role || "user")}</td>
+              <td><button type="button" class="admin-approve-btn" data-uid="${user.uid}">승인</button></td>
+            `;
+
+            adminPendingTableBody.appendChild(tr);
+          });
+        }
+
+        document.querySelectorAll(".admin-approve-btn").forEach((button) => {
+          button.addEventListener("click", async () => {
+            const uid = button.dataset.uid;
+            const ok = confirm("이 사용자를 승인할까요?");
+            if (!ok) return;
+
+            try {
+              await updateDoc(doc(db, "users", uid), {
+                approved: true
+              });
+
+              showToast("승인했습니다.");
+              openAdminScreen();
+            } catch (error) {
+              console.error(error);
+              showToast("승인에 실패했습니다.");
+            }
+          });
+        });
+
+      } catch (error) {
+        console.error(error);
+        adminUserStatusTableBody.innerHTML = `
+          <tr>
+            <td colspan="6">유저 현황을 불러오지 못했습니다.</td>
+          </tr>
+        `;
+
+        adminPendingTableBody.innerHTML = `
+          <tr>
+            <td colspan="4">승인 대기 목록을 불러오지 못했습니다.</td>
+          </tr>
+        `;
+      }
+    }
 
     function createId() {
       if (crypto?.randomUUID) return crypto.randomUUID();
@@ -2261,6 +2608,7 @@
             const value = getPostcardPointValue(listType, item);
 
             acc.purchased += value;
+            acc.postcardCount += 1;
 
             if (item.done === true) {
               acc.received += value;
@@ -2269,8 +2617,121 @@
 
           return acc;
         },
-        { received: 0, purchased: 0 }
+        { received: 0, purchased: 0, postcardCount: 0 }
       );
+    }
+
+    function getUserGoalRef() {
+      if (!currentUser) {
+        throw new Error("로그인 상태가 아닙니다.");
+      }
+
+      return doc(db, "users", currentUser.uid, "settings", "reputationGoal");
+    }
+
+    async function loadTargetReputation() {
+      if (!currentUser) return;
+
+      try {
+        const snapshot = await getDoc(getUserGoalRef());
+        const data = snapshot.data() || {};
+        const savedTarget = Number(data.targetReputation || 0);
+        const savedMailbox = Number(data.currentMailboxCapacity || 0);
+
+        targetReputation = Number.isFinite(savedTarget) && savedTarget > 0 ? Math.floor(savedTarget) : 0;
+        currentMailboxCapacity = Number.isFinite(savedMailbox) && savedMailbox > 0 ? Math.floor(savedMailbox) : 0;
+
+        if (targetReputationInput) {
+          targetReputationInput.value = targetReputation > 0 ? String(targetReputation) : "";
+        }
+
+        if (currentMailboxCapacityInput) {
+          currentMailboxCapacityInput.value = currentMailboxCapacity > 0 ? String(currentMailboxCapacity) : "";
+        }
+
+        renderGoalCalculator();
+      } catch (error) {
+        console.error(error);
+        showToast("목표 명성을 불러오지 못했습니다.");
+      }
+    }
+
+    async function saveTargetReputation() {
+      if (!currentUser) return;
+
+      const rawTarget = Number(targetReputationInput.value || 0);
+      const rawMailbox = Number(currentMailboxCapacityInput.value || 0);
+      const nextTarget = Number.isFinite(rawTarget) && rawTarget > 0 ? Math.floor(rawTarget) : 0;
+      const nextMailbox = Number.isFinite(rawMailbox) && rawMailbox > 0 ? Math.floor(rawMailbox) : 0;
+
+      try {
+        targetReputation = nextTarget;
+        currentMailboxCapacity = nextMailbox;
+
+        await setDoc(
+          getUserGoalRef(),
+          {
+            targetReputation,
+            currentMailboxCapacity,
+            updatedAt: serverTimestamp()
+          },
+          { merge: true }
+        );
+
+        if (targetReputationInput) {
+          targetReputationInput.value = targetReputation > 0 ? String(targetReputation) : "";
+        }
+
+        if (currentMailboxCapacityInput) {
+          currentMailboxCapacityInput.value = currentMailboxCapacity > 0 ? String(currentMailboxCapacity) : "";
+        }
+
+        renderGoalCalculator();
+        showToast("목표 정보를 저장했습니다.");
+      } catch (error) {
+        console.error(error);
+        showToast("목표 정보 저장에 실패했습니다.");
+      }
+    }
+
+    function getGoalProgressMessage(percent, remaining, balance) {
+      if (targetReputation <= 0) return "목표 명성을 입력하면 진행률이 표시됩니다.";
+      if (percent >= 100 && balance >= 0) return "목표 달성 완료! 우칸도 충분합니다.";
+      if (percent >= 100 && balance < 0) return `목표 명성은 달성했지만 우칸이 ${Math.abs(balance).toLocaleString("ko-KR")}칸 부족합니다.`;
+      if (percent >= 70) return "거의 다 왔습니다. 남은 명성만 조금 더 채우면 됩니다.";
+      if (percent >= 30) return "시말 대비 진행 중입니다. 아직 채울 여지가 있습니다.";
+      return "아직 갈 길이 멉니다. 목표까지 차근차근 채워야 합니다.";
+    }
+
+    function renderGoalCalculator() {
+      const totals = calculatePostcardTotals(["sebae", "fourth"]);
+      const purchased = totals.purchased;
+      const currentSlots = totals.postcardCount;
+      const remaining = Math.max(targetReputation - purchased, 0);
+      const requiredKkam = remaining > 0 ? Math.ceil(remaining / 42) : 0;
+      const totalSlots = currentSlots + requiredKkam;
+      const balance = currentMailboxCapacity - totalSlots;
+      const progressRaw = targetReputation > 0 ? (purchased / targetReputation) * 100 : 0;
+      const progress = Math.max(0, Math.min(progressRaw, 100));
+      const progressText = targetReputation > 0 ? `${progressRaw.toFixed(1)}%` : "0%";
+
+      if (currentPurchasedReputation) currentPurchasedReputation.textContent = purchased.toLocaleString("ko-KR");
+      if (currentMailboxSlots) currentMailboxSlots.textContent = `${currentSlots.toLocaleString("ko-KR")}칸`;
+      if (remainingReputation) remainingReputation.textContent = remaining.toLocaleString("ko-KR");
+      if (requiredKkamLeaves) requiredKkamLeaves.textContent = `${requiredKkam.toLocaleString("ko-KR")}개`;
+      if (targetMailboxSlots) targetMailboxSlots.textContent = `${totalSlots.toLocaleString("ko-KR")}칸`;
+      if (mailboxSlotBalance) {
+        if (currentMailboxCapacity <= 0) {
+          mailboxSlotBalance.textContent = "미입력";
+        } else if (balance >= 0) {
+          mailboxSlotBalance.textContent = `${balance.toLocaleString("ko-KR")}칸 남음`;
+        } else {
+          mailboxSlotBalance.textContent = `${Math.abs(balance).toLocaleString("ko-KR")}칸 부족`;
+        }
+      }
+      if (goalProgressPercent) goalProgressPercent.textContent = progressText;
+      if (goalProgressFill) goalProgressFill.style.width = `${progress}%`;
+      if (goalProgressMessage) goalProgressMessage.textContent = getGoalProgressMessage(progressRaw, remaining, balance);
     }
 
     function renderPostcardTotals({ receivedTarget, purchasedTarget, listTypes }) {
@@ -2677,6 +3138,7 @@
         purchasedTarget: combinedPurchasedTotal,
         listTypes: ["sebae", "fourth"]
       });
+      renderGoalCalculator();
 
       renderEntryRows({
         listType: "sebae",
@@ -2790,6 +3252,67 @@
       document.querySelectorAll(".seg-btn[data-category]").forEach((button) => {
         button.disabled = false;
       });
+    }
+
+    function getEntriesForExport(listType, sourceEntries) {
+      return sortEntries(applyViewFilters(sourceEntries, listType));
+    }
+
+    function createExportRows(listType, sourceEntries) {
+      return getEntriesForExport(listType, sourceEntries).map((item) => {
+        const marks = normalizePaidMarks(item, listType);
+        const paidMarkText = getPaidMarkOptions(listType)
+          .map((option) => `${option.label}:${marks[option.key] ? "O" : ""}`)
+          .join(" / ");
+
+        return {
+          "엽서종류": listMeta[listType]?.title || listType,
+          "닉네임": item.nickname || "",
+          "구분": item.category || "",
+          "지급방식": getPaymentType(item),
+          "지급시기": getDisplayDate(item),
+          "지급여부": item.category === "판매" ? paidMarkText : "",
+          "상태": item.category === "판매" ? getStatus(item) : "",
+          "상승테 여부": isRisingTe(item) ? "O" : "",
+          "완료": item.done ? "O" : "",
+          "비고": getNote(item)
+        };
+      });
+    }
+
+    function downloadWorkbook(workbook, filename) {
+      if (!window.XLSX) {
+        showToast("엑셀 내보내기 도구를 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.");
+        return;
+      }
+
+      window.XLSX.writeFile(workbook, filename);
+    }
+
+    function exportCurrentListToExcel() {
+      if (!currentListType) {
+        showToast("목록 화면에서만 내보내기를 사용할 수 있습니다.");
+        return;
+      }
+
+      const workbook = window.XLSX.utils.book_new();
+      const rows = createExportRows(currentListType, entries);
+      const worksheet = window.XLSX.utils.json_to_sheet(rows);
+
+      window.XLSX.utils.book_append_sheet(workbook, worksheet, listMeta[currentListType]?.title || currentListType);
+      downloadWorkbook(workbook, `${listMeta[currentListType]?.title || "목록"}_내보내기.xlsx`);
+    }
+
+    function exportCombinedToExcel() {
+      const workbook = window.XLSX.utils.book_new();
+
+      const sebaeRows = createExportRows("sebae", entriesByList.sebae || []);
+      const fourthRows = createExportRows("fourth", entriesByList.fourth || []);
+
+      window.XLSX.utils.book_append_sheet(workbook, window.XLSX.utils.json_to_sheet(sebaeRows), "세배엽");
+      window.XLSX.utils.book_append_sheet(workbook, window.XLSX.utils.json_to_sheet(fourthRows), "4기엽");
+
+      downloadWorkbook(workbook, "세배엽_4기엽_한눈에보기_내보내기.xlsx");
     }
 
     function normalizeExcelValue(value) {
@@ -3456,6 +3979,10 @@
     modalListType = null;
     entries = [];
     entriesByList = { sebae: [], fourth: [] };
+    targetReputation = 0;
+    currentMailboxCapacity = 0;
+    if (targetReputationInput) targetReputationInput.value = "";
+    if (currentMailboxCapacityInput) currentMailboxCapacityInput.value = "";
     clearSingleSubscription();
     clearCombinedSubscriptions();
     userEmail.textContent = "";
@@ -3481,6 +4008,7 @@
     noticeAdminBtn.classList.add("hidden");
   }
 
+  await loadTargetReputation();
   showScreen("home");
   } 
     else {
@@ -3506,6 +4034,20 @@
     backTrashHomeBtn.addEventListener("click", goHome);
     backNoticeHomeBtn.addEventListener("click", goHome);
     saveNoticeBtn.addEventListener("click", saveNoticeSettings);
+    saveTargetReputationBtn.addEventListener("click", saveTargetReputation);
+    targetReputationInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        saveTargetReputation();
+      }
+    });
+    currentMailboxCapacityInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        saveTargetReputation();
+      }
+    });
+
+    listExportBtn.addEventListener("click", exportCurrentListToExcel);
+    combinedExportBtn.addEventListener("click", exportCombinedToExcel);
 
     addEntryBtn.addEventListener("click", () => openModal());
 
