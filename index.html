@@ -180,10 +180,19 @@
 
     .table-wrap {
       width: 100%;
-      overflow-x: auto;
+      max-height: min(66vh, 720px);
+      overflow: auto;
       border: 1px solid var(--line);
       border-radius: 16px;
       -webkit-overflow-scrolling: touch;
+      scrollbar-gutter: stable both-edges;
+    }
+
+    .table-wrap thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      box-shadow: 0 1px 0 var(--line);
     }
 
     table {
@@ -1244,10 +1253,10 @@
     }
 
     .dual-panel .table-wrap {
-      max-height: none;
-      overflow-x: auto;
-      overflow-y: visible;
+      max-height: min(56vh, 620px);
+      overflow: auto;
       -webkit-overflow-scrolling: touch;
+      scrollbar-gutter: stable both-edges;
     }
 
     .dual-panel table {
@@ -1325,7 +1334,8 @@
 
       .table-wrap,
       .dual-panel .table-wrap {
-        overflow-x: auto;
+        max-height: min(62vh, 640px);
+        overflow: auto;
       }
     }
 
