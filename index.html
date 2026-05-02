@@ -845,6 +845,154 @@
       font-weight: 800;
     }
 
+
+    .custom-paid-area {
+      margin-top: 12px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #f8f9ff;
+    }
+
+    .custom-paid-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .custom-paid-row,
+    .custom-etc-row {
+      display: grid;
+      grid-template-columns: 1fr 86px auto;
+      gap: 8px;
+      align-items: center;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: #fff;
+    }
+
+    .custom-paid-row span {
+      color: #3f4355;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .custom-paid-row input,
+    .custom-etc-row input {
+      height: 36px;
+      padding: 0 10px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .custom-etc-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .custom-etc-title {
+      margin: 14px 0 0;
+      color: #3f4355;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .custom-etc-row {
+      grid-template-columns: 1fr 86px auto;
+    }
+
+    .custom-etc-remove-btn,
+    .custom-add-btn {
+      height: 36px;
+      padding: 0 10px;
+      border-radius: 10px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .custom-add-btn {
+      margin-top: 8px;
+      background: var(--primary-soft);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .usage-panel {
+      margin: -4px 0 18px;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+    }
+
+    .usage-panel h2 {
+      margin: 0 0 12px;
+      font-size: 20px;
+    }
+
+    .usage-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .usage-section {
+      min-height: 92px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #f8f9ff;
+    }
+
+    .usage-section h3 {
+      margin: 0 0 8px;
+      color: #34384a;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .usage-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      color: #4d5266;
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.7;
+    }
+
+    .usage-empty {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .currency-box {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--line);
+    }
+
+    @media (max-width: 720px) {
+      .custom-paid-grid,
+      .usage-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .custom-paid-row,
+      .custom-etc-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .goal-stat {
       min-height: 48px;
       padding: 9px 10px;
@@ -1306,6 +1454,28 @@
           </div>
         </div>
 
+        <div class="usage-panel">
+          <h2>매입에 사용한 엽서</h2>
+          <div class="usage-grid">
+            <div class="usage-section">
+              <h3>지급완</h3>
+              <div id="usedPostcardsPaid"></div>
+              <div class="currency-box">
+                <h3>매입에 사용한 재화</h3>
+                <div id="usedCurrencyPaid"></div>
+              </div>
+            </div>
+            <div class="usage-section">
+              <h3>지급 예정 포함</h3>
+              <div id="usedPostcardsPlanned"></div>
+              <div class="currency-box">
+                <h3>매입에 사용한 재화</h3>
+                <div id="usedCurrencyPlanned"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="filter-toolbar">
           <span>보기</span>
           <button type="button" class="filter-btn active" data-category-filter="all">전체</button>
@@ -1456,15 +1626,64 @@
         <label>엽서종류</label>
         <div class="checkbox-row">
           <label class="choice-check">
-            <input id="listTypeSebae" type="checkbox" value="sebae" />
-            <span>세배엽</span>
+            <input id="listTypeSebaeDefault" class="postcard-option-check" type="checkbox" data-list-type="sebae" data-price-mode="default" />
+            <span>세배엽(깜주)</span>
           </label>
           <label class="choice-check">
-            <input id="listTypeFourth" type="checkbox" value="fourth" />
-            <span>4기엽</span>
+            <input id="listTypeFourthDefault" class="postcard-option-check" type="checkbox" data-list-type="fourth" data-price-mode="default" />
+            <span>4기엽(깜깜주)</span>
+          </label>
+          <label class="choice-check">
+            <input id="listTypeSebaeCustom" class="postcard-option-check" type="checkbox" data-list-type="sebae" data-price-mode="custom" />
+            <span>세배엽(기타)</span>
+          </label>
+          <label class="choice-check">
+            <input id="listTypeFourthCustom" class="postcard-option-check" type="checkbox" data-list-type="fourth" data-price-mode="custom" />
+            <span>4기엽(기타)</span>
           </label>
         </div>
-        <p class="hint">둘 다 체크하면 세배엽 목록과 4기엽 목록에 동시에 추가됩니다.</p>
+        <p class="hint">세배엽과 4기엽은 동시에 선택할 수 있고, 같은 엽서종류 안에서는 기본/기타 중 하나만 선택됩니다.</p>
+      </div>
+
+      <div class="field custom-paid-area hidden" id="customPaidItemsField">
+        <label>기타 가격 구성</label>
+        <p class="hint">수량만큼 지급여부 체크칸이 생성됩니다. 깜엽은 지급여부에 깜, 주엽은 주로 표시됩니다.</p>
+        <div class="custom-paid-grid">
+          <label class="custom-paid-row">
+            <span>깜엽</span>
+            <input id="customKkamQty" class="custom-paid-qty" type="number" min="0" step="1" placeholder="수량" data-code="kkam" />
+            <span></span>
+          </label>
+          <label class="custom-paid-row">
+            <span>주엽</span>
+            <input id="customJuQty" class="custom-paid-qty" type="number" min="0" step="1" placeholder="수량" data-code="ju" />
+            <span></span>
+          </label>
+          <label class="custom-paid-row">
+            <span>10기</span>
+            <input id="customTenQty" class="custom-paid-qty" type="number" min="0" step="1" placeholder="수량" data-code="ten" />
+            <span></span>
+          </label>
+          <label class="custom-paid-row">
+            <span>고귀</span>
+            <input id="customGogwiQty" class="custom-paid-qty" type="number" min="0" step="1" placeholder="수량" data-code="gogwi" />
+            <span></span>
+          </label>
+          <label class="custom-paid-row">
+            <span>보엽</span>
+            <input id="customBoQty" class="custom-paid-qty" type="number" min="0" step="1" placeholder="수량" data-code="bo" />
+            <span></span>
+          </label>
+          <label class="custom-paid-row">
+            <span>+3</span>
+            <input id="customPlus3Qty" class="custom-paid-qty" type="number" min="0" step="1" placeholder="수량" data-code="plus3" />
+            <span></span>
+          </label>
+        </div>
+
+        <p class="custom-etc-title">기타 직접 입력</p>
+        <div id="customEtcRows" class="custom-etc-list"></div>
+        <button id="addCustomEtcBtn" type="button" class="custom-add-btn">기타 항목 추가</button>
       </div>
 
       <div class="field">
@@ -1631,6 +1850,10 @@
     const goalProgressPercent = document.getElementById("goalProgressPercent");
     const goalProgressFill = document.getElementById("goalProgressFill");
     const goalProgressMessage = document.getElementById("goalProgressMessage");
+    const usedPostcardsPaid = document.getElementById("usedPostcardsPaid");
+    const usedPostcardsPlanned = document.getElementById("usedPostcardsPlanned");
+    const usedCurrencyPaid = document.getElementById("usedCurrencyPaid");
+    const usedCurrencyPlanned = document.getElementById("usedCurrencyPlanned");
 
     const modalBackdrop = document.getElementById("modalBackdrop");
     const modalTitle = document.getElementById("modalTitle");
@@ -2985,7 +3208,7 @@
             }
           });
 
-          if (item.category === "판매") {
+          if (shouldRenderPaidMarks(item)) {
             row.querySelectorAll(".paid-mark-check").forEach((checkbox) => {
               checkbox.addEventListener("change", async (event) => {
                 const paidKey = event.target.dataset.paidKey;
@@ -2998,7 +3221,7 @@
                       ...currentMarks,
                       [paidKey]: event.target.checked
                     };
-                    const allPaidMarksChecked = getPaidMarkOptions(listType).every((option) => nextMarks[option.key] === true);
+                    const allPaidMarksChecked = getPaidMarkOptions(listType, item).every((option) => nextMarks[option.key] === true);
 
                     await updateSharedItemState(listType, item.id, {
                       paidMarks: nextMarks,
@@ -3016,7 +3239,7 @@
                         ...currentMarks,
                         [paidKey]: event.target.checked
                       };
-                      const allPaidMarksChecked = getPaidMarkOptions(listType).every((option) => nextMarks[option.key] === true);
+                      const allPaidMarksChecked = getPaidMarkOptions(listType, item).every((option) => nextMarks[option.key] === true);
 
                       return {
                         ...entry,
@@ -3047,7 +3270,7 @@
                   await updateSharedItemState(listType, item.id, {
                     status,
                     ...(shouldCheckAllPaidMarks ? {
-                      paidMarks: getAllPaidMarksChecked(listType),
+                      paidMarks: getAllPaidMarksChecked(listType, item),
                       paid: false
                     } : {})
                   });
@@ -3059,7 +3282,7 @@
                           ...entry,
                           status,
                           ...(shouldCheckAllPaidMarks ? {
-                            paidMarks: getAllPaidMarksChecked(listType),
+                            paidMarks: getAllPaidMarksChecked(listType, item),
                             paid: false
                           } : {})
                         }
@@ -3512,7 +3735,7 @@
 
             seenExcelNicknamesByList[listType].add(normalizedNickname);
 
-            targetEntries[targetKey].entries.push({
+            const importedEntry = {
               id: createId(),
               nickname,
               category,
@@ -3522,12 +3745,18 @@
               done,
               status,
               paid: false,
-              paidMarks: status === "지급완" ? getAllPaidMarksChecked(listType) : normalizePaidMarks({}, listType),
+              paidItemMode: "default",
+              paidItemGroups: [],
               risingTe,
               createdAt: importStartedAt + rowIndex,
               createdBy: currentUser.uid,
               createdByEmail: currentUser.email,
               shared: shouldSaveAsShared
+            };
+
+            targetEntries[targetKey].entries.push({
+              ...importedEntry,
+              paidMarks: status === "지급완" ? getAllPaidMarksChecked(listType, importedEntry) : normalizePaidMarks(importedEntry, listType)
             });
 
             importedCount += 1;
@@ -3918,6 +4147,881 @@
           </tr>
         `;
       }
+    }
+
+
+    const postcardOptionInputs = Array.from(document.querySelectorAll(".postcard-option-check"));
+    const customPaidItemsField = document.getElementById("customPaidItemsField");
+    const customEtcRows = document.getElementById("customEtcRows");
+    const addCustomEtcBtn = document.getElementById("addCustomEtcBtn");
+
+    const CUSTOM_PAID_PRESETS = [
+      { code: "kkam", name: "깜엽", label: "깜", summaryName: "깜엽", inputId: "customKkamQty" },
+      { code: "ju", name: "주엽", label: "주", summaryName: "주엽", inputId: "customJuQty" },
+      { code: "ten", name: "10기", label: "10기", summaryName: "10기", inputId: "customTenQty" },
+      { code: "gogwi", name: "고귀", label: "고귀", summaryName: "고귀", inputId: "customGogwiQty" },
+      { code: "bo", name: "보엽", label: "보엽", summaryName: "보엽", inputId: "customBoQty" },
+      { code: "plus3", name: "+3", label: "+3", summaryName: "+3", inputId: "customPlus3Qty" }
+    ];
+
+    function toPositiveInteger(value) {
+      const number = Number(value || 0);
+      return Number.isFinite(number) && number > 0 ? Math.floor(number) : 0;
+    }
+
+    function normalizePostcardName(value) {
+      return String(value || "").trim().replace(/\s+/g, " ");
+    }
+
+    function normalizePostcardNameCompact(value) {
+      return normalizePostcardName(value).replace(/\s+/g, "").toLowerCase();
+    }
+
+    function getLabelForPaidMark(name) {
+      const compact = normalizePostcardNameCompact(name);
+      if (compact === "깜" || compact === "깜엽") return "깜";
+      if (compact === "주" || compact === "주엽") return "주";
+      return normalizePostcardName(name);
+    }
+
+    function getSummaryNameForPaidMark(name) {
+      const compact = normalizePostcardNameCompact(name);
+      if (compact === "깜" || compact === "깜엽") return "깜엽";
+      if (compact === "주" || compact === "주엽") return "주엽";
+      return normalizePostcardName(name);
+    }
+
+    function makePaidItemGroup({ name, quantity, type = "custom", code = "custom", label = "", summaryName = "" }) {
+      const cleanName = normalizePostcardName(name);
+      const cleanQuantity = toPositiveInteger(quantity);
+
+      if (!cleanName || cleanQuantity <= 0) return null;
+
+      return {
+        type,
+        code,
+        name: cleanName,
+        label: label || getLabelForPaidMark(cleanName),
+        summaryName: summaryName || getSummaryNameForPaidMark(cleanName),
+        quantity: cleanQuantity
+      };
+    }
+
+    function getDefaultPaidItemGroups(listType, item = null) {
+      if (item?.category === "교환") {
+        const name = listType === "fourth" ? "4기엽" : "세배엽";
+        return [
+          { type: "exchange", code: listType, name, label: name, summaryName: name, quantity: 1 }
+        ];
+      }
+
+      if (listType === "fourth") {
+        return [
+          { type: "default", code: "kkam", name: "깜엽", label: "깜", summaryName: "깜엽", quantity: 2 },
+          { type: "default", code: "ju", name: "주엽", label: "주", summaryName: "주엽", quantity: 1 }
+        ];
+      }
+
+      return [
+        { type: "default", code: "kkam", name: "깜엽", label: "깜", summaryName: "깜엽", quantity: 1 },
+        { type: "default", code: "ju", name: "주엽", label: "주", summaryName: "주엽", quantity: 1 }
+      ];
+    }
+
+    function normalizePaidItemGroups(groups) {
+      if (!Array.isArray(groups)) return [];
+
+      return groups
+        .map((group) => makePaidItemGroup({
+          name: group.summaryName || group.name || group.label,
+          quantity: group.quantity,
+          type: group.type || "custom",
+          code: group.code || "custom",
+          label: group.label || "",
+          summaryName: group.summaryName || group.name || group.label || ""
+        }))
+        .filter(Boolean);
+    }
+
+    function getPaidItemGroupsForItem(listType = currentListType, item = null) {
+      if (item?.paidItemMode === "custom") {
+        const groups = normalizePaidItemGroups(item.paidItemGroups || item.customPaidItems || []);
+        if (groups.length > 0) return groups;
+      }
+
+      return getDefaultPaidItemGroups(listType, item);
+    }
+
+    function expandPaidItemGroupsToOptions(groups, mode = "default", listType = currentListType, item = null) {
+      const options = [];
+
+      groups.forEach((group, groupIndex) => {
+        const quantity = toPositiveInteger(group.quantity);
+
+        for (let index = 0; index < quantity; index += 1) {
+          let key = `${mode}-${groupIndex + 1}-${index + 1}`;
+
+          if (mode === "default" && group.code === "kkam") {
+            key = index === 0 ? "kkam1" : `kkam${index + 1}`;
+          }
+
+          if (mode === "default" && group.code === "ju") {
+            key = "ju";
+          }
+
+          if (mode === "default" && item?.category === "교환") {
+            key = `${listType}-exchange-${index + 1}`;
+          }
+
+          options.push({
+            key,
+            label: group.label || group.name,
+            summaryName: group.summaryName || group.name || group.label
+          });
+        }
+      });
+
+      return options;
+    }
+
+    function shouldRenderPaidMarks(item) {
+      return item?.category === "판매" || item?.category === "교환";
+    }
+
+    renderPaymentCell = function (item, listType = currentListType) {
+      if (!shouldRenderPaidMarks(item)) return "";
+      return renderPaidMarks(item, listType);
+    }
+
+    getPaidMarkOptions = function (listType = currentListType, item = null) {
+      const groups = getPaidItemGroupsForItem(listType, item);
+      const mode = item?.paidItemMode === "custom" ? "custom" : "default";
+      return expandPaidItemGroupsToOptions(groups, mode, listType, item);
+    }
+
+    normalizePaidMarks = function (item, listType = currentListType) {
+      const marks = item?.paidMarks && typeof item.paidMarks === "object"
+        ? item.paidMarks
+        : {};
+
+      const result = {};
+      getPaidMarkOptions(listType, item).forEach((option) => {
+        result[option.key] = Boolean(marks[option.key]);
+      });
+
+      if (item?.paid === true && "ju" in result) {
+        result.ju = true;
+      }
+
+      return result;
+    }
+
+    getAllPaidMarksChecked = function (listType = currentListType, item = null) {
+      const result = {};
+
+      getPaidMarkOptions(listType, item).forEach((option) => {
+        result[option.key] = true;
+      });
+
+      return result;
+    }
+
+    renderPaidMarks = function (item, listType = currentListType) {
+      const marks = normalizePaidMarks(item, listType);
+      return `
+        <div class="paid-marks">
+          ${getPaidMarkOptions(listType, item).map((option) => `
+            <label class="paid-mark">
+              <input
+                class="paid-mark-check"
+                type="checkbox"
+                data-paid-key="${escapeHtml(option.key)}"
+                ${marks[option.key] ? "checked" : ""}
+              />
+              <span>${escapeHtml(option.label)}</span>
+            </label>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    isPaymentComplete = function (item, listType = currentListType) {
+      if (!shouldRenderPaidMarks(item)) return true;
+
+      const options = getPaidMarkOptions(listType, item);
+      if (options.length === 0) return true;
+
+      const marks = normalizePaidMarks(item, listType);
+      return options.every((option) => marks[option.key] === true);
+    }
+
+    function getSelectedPostcardTargets() {
+      return postcardOptionInputs
+        .filter((input) => input.checked)
+        .map((input) => ({
+          listType: input.dataset.listType,
+          paidItemMode: input.dataset.priceMode || "default"
+        }))
+        .filter((target) => target.listType);
+    }
+
+    getSelectedListTypes = function () {
+      return getSelectedPostcardTargets().map((target) => target.listType);
+    }
+
+    setSelectedListTypes = function (targets) {
+      const normalizedTargets = (targets || []).map((target) => {
+        if (typeof target === "string") {
+          return { listType: target, paidItemMode: "default" };
+        }
+
+        return {
+          listType: target?.listType,
+          paidItemMode: target?.paidItemMode || target?.priceMode || "default"
+        };
+      });
+
+      postcardOptionInputs.forEach((input) => {
+        input.checked = normalizedTargets.some((target) =>
+          target.listType === input.dataset.listType && target.paidItemMode === input.dataset.priceMode
+        );
+      });
+
+      syncCustomPaidItemsVisibility();
+    }
+
+    setListTypeFieldDisabled = function (disabled) {
+      postcardOptionInputs.forEach((input) => {
+        input.disabled = disabled;
+      });
+
+      document.querySelectorAll(".choice-check").forEach((label) => {
+        label.classList.toggle("disabled", disabled);
+      });
+    }
+
+    function getDefaultTargetForModal(listType) {
+      return {
+        listType: listType || currentListType || "sebae",
+        paidItemMode: "default"
+      };
+    }
+
+    function syncCustomPaidItemsVisibility() {
+      const hasCustom = postcardOptionInputs.some((input) => input.checked && input.dataset.priceMode === "custom");
+      if (customPaidItemsField) customPaidItemsField.classList.toggle("hidden", !hasCustom);
+
+      if (hasCustom && customEtcRows && customEtcRows.children.length === 0) {
+        addCustomEtcRow();
+      }
+    }
+
+    function resetCustomPaidItemInputs() {
+      CUSTOM_PAID_PRESETS.forEach((preset) => {
+        const input = document.getElementById(preset.inputId);
+        if (input) input.value = "";
+      });
+
+      if (customEtcRows) customEtcRows.innerHTML = "";
+      addCustomEtcRow();
+    }
+
+    function addCustomEtcRow(name = "", quantity = "") {
+      if (!customEtcRows) return;
+
+      const row = document.createElement("div");
+      row.className = "custom-etc-row";
+      row.innerHTML = `
+        <input class="custom-etc-name" type="text" placeholder="엽서 이름" value="${escapeHtml(name)}" />
+        <input class="custom-etc-qty" type="number" min="0" step="1" placeholder="수량" value="${quantity ? escapeHtml(quantity) : ""}" />
+        <button type="button" class="custom-etc-remove-btn">삭제</button>
+      `;
+
+      row.querySelector(".custom-etc-remove-btn").addEventListener("click", () => {
+        row.remove();
+        if (customEtcRows.children.length === 0) addCustomEtcRow();
+      });
+
+      customEtcRows.appendChild(row);
+    }
+
+    function getCustomPaidItemGroupsFromInputs() {
+      const groups = [];
+
+      CUSTOM_PAID_PRESETS.forEach((preset) => {
+        const input = document.getElementById(preset.inputId);
+        const quantity = toPositiveInteger(input?.value || 0);
+        if (quantity <= 0) return;
+
+        const group = makePaidItemGroup({
+          name: preset.name,
+          quantity,
+          type: "preset",
+          code: preset.code,
+          label: preset.label,
+          summaryName: preset.summaryName
+        });
+
+        if (group) groups.push(group);
+      });
+
+      if (customEtcRows) {
+        customEtcRows.querySelectorAll(".custom-etc-row").forEach((row) => {
+          const name = row.querySelector(".custom-etc-name")?.value || "";
+          const quantity = row.querySelector(".custom-etc-qty")?.value || 0;
+          const group = makePaidItemGroup({
+            name,
+            quantity,
+            type: "custom",
+            code: "custom"
+          });
+
+          if (group) groups.push(group);
+        });
+      }
+
+      return groups;
+    }
+
+    function setCustomPaidItemInputsFromGroups(groups) {
+      resetCustomPaidItemInputs();
+
+      const normalizedGroups = normalizePaidItemGroups(groups);
+
+      normalizedGroups.forEach((group) => {
+        const preset = CUSTOM_PAID_PRESETS.find((item) => item.code === group.code && group.type !== "custom");
+
+        if (preset) {
+          const input = document.getElementById(preset.inputId);
+          if (input) input.value = String(group.quantity || "");
+          return;
+        }
+
+        const firstEmptyRow = Array.from(customEtcRows?.querySelectorAll(".custom-etc-row") || [])
+          .find((row) => !row.querySelector(".custom-etc-name")?.value && !row.querySelector(".custom-etc-qty")?.value);
+
+        if (firstEmptyRow) {
+          firstEmptyRow.querySelector(".custom-etc-name").value = group.summaryName || group.name || "";
+          firstEmptyRow.querySelector(".custom-etc-qty").value = String(group.quantity || "");
+        } else {
+          addCustomEtcRow(group.summaryName || group.name || "", group.quantity || "");
+        }
+      });
+    }
+
+    function setCustomPaidItemInputsDisabled(disabled) {
+      document.querySelectorAll("#customPaidItemsField input, #customPaidItemsField button").forEach((element) => {
+        element.disabled = disabled;
+      });
+    }
+
+    function buildEntryPaidItemData(listType, paidItemMode, baseItem = {}) {
+      if (paidItemMode === "custom") {
+        const groups = getCustomPaidItemGroupsFromInputs();
+
+        if (groups.length === 0) {
+          throw new Error("CUSTOM_PAID_ITEMS_EMPTY");
+        }
+
+        return {
+          paidItemMode: "custom",
+          paidItemGroups: groups
+        };
+      }
+
+      return {
+        paidItemMode: "default",
+        paidItemGroups: []
+      };
+    }
+
+    function getCheckedSummaryCounts(listType, item) {
+      const counts = {};
+      const marks = normalizePaidMarks(item, listType);
+
+      getPaidMarkOptions(listType, item).forEach((option) => {
+        if (!marks[option.key]) return;
+        const name = option.summaryName || option.label;
+        counts[name] = (counts[name] || 0) + 1;
+      });
+
+      return counts;
+    }
+
+    function addCount(target, name, quantity = 1) {
+      const cleanName = normalizePostcardName(name);
+      const cleanQuantity = toPositiveInteger(quantity);
+      if (!cleanName || cleanQuantity <= 0) return;
+      target[cleanName] = (target[cleanName] || 0) + cleanQuantity;
+    }
+
+    function calculateUsedPostcardSummary() {
+      const paidCounts = {};
+      const plannedCounts = {};
+
+      ["sebae", "fourth"].forEach((listType) => {
+        (entriesByList[listType] || []).forEach((item) => {
+          if (item?.category === "기부") return;
+          if (!shouldRenderPaidMarks(item)) return;
+
+          getPaidMarkOptions(listType, item).forEach((option) => {
+            addCount(plannedCounts, option.summaryName || option.label, 1);
+          });
+
+          const marks = normalizePaidMarks(item, listType);
+          getPaidMarkOptions(listType, item).forEach((option) => {
+            if (!marks[option.key]) return;
+            addCount(paidCounts, option.summaryName || option.label, 1);
+          });
+        });
+      });
+
+      return { paidCounts, plannedCounts };
+    }
+
+    function getCurrencyRule(name) {
+      const compact = normalizePostcardNameCompact(name);
+
+      if (compact === "깜" || compact === "깜엽") {
+        return { currency: "ruble", price: 42000 };
+      }
+
+      if (compact === "주" || compact === "주엽") {
+        return { currency: "luna", price: 50 };
+      }
+
+      if (compact === "고엽" || compact === "고급엽서") {
+        return { currency: "luna", price: 10 };
+      }
+
+      if (compact === "일엽" || compact === "일반엽서") {
+        return { currency: "ruble", price: 2500 };
+      }
+
+      return null;
+    }
+
+    function calculateCurrencyTotals(counts) {
+      return Object.entries(counts).reduce(
+        (acc, [name, quantity]) => {
+          const rule = getCurrencyRule(name);
+          if (!rule) return acc;
+
+          acc[rule.currency] += rule.price * quantity;
+          return acc;
+        },
+        { ruble: 0, luna: 0 }
+      );
+    }
+
+    function renderCountList(target, counts) {
+      if (!target) return;
+
+      const entries = Object.entries(counts)
+        .filter(([, quantity]) => quantity > 0)
+        .sort((a, b) => a[0].localeCompare(b[0], "ko-KR", { numeric: true, sensitivity: "base" }));
+
+      if (entries.length === 0) {
+        target.innerHTML = `<p class="usage-empty">표시할 엽서가 없습니다.</p>`;
+        return;
+      }
+
+      target.innerHTML = `
+        <ul class="usage-list">
+          ${entries.map(([name, quantity]) => `<li>${escapeHtml(name)}: ${quantity.toLocaleString("ko-KR")}장</li>`).join("")}
+        </ul>
+      `;
+    }
+
+    function renderCurrencyList(target, counts) {
+      if (!target) return;
+
+      const currency = calculateCurrencyTotals(counts);
+
+      if (currency.ruble <= 0 && currency.luna <= 0) {
+        target.innerHTML = `<p class="usage-empty">계산할 재화가 없습니다.</p>`;
+        return;
+      }
+
+      target.innerHTML = `
+        <ul class="usage-list">
+          <li>루블: ${currency.ruble.toLocaleString("ko-KR")}</li>
+          <li>루나: ${currency.luna.toLocaleString("ko-KR")}</li>
+        </ul>
+      `;
+    }
+
+    function renderUsedPostcardPanel() {
+      const { paidCounts, plannedCounts } = calculateUsedPostcardSummary();
+
+      renderCountList(usedPostcardsPaid, paidCounts);
+      renderCurrencyList(usedCurrencyPaid, paidCounts);
+      renderCountList(usedPostcardsPlanned, plannedCounts);
+      renderCurrencyList(usedCurrencyPlanned, plannedCounts);
+    }
+
+    renderCombinedEntries = function () {
+      const query = combinedSearchInput.value.trim();
+
+      renderPostcardTotals({
+        receivedTarget: combinedReceivedTotal,
+        purchasedTarget: combinedPurchasedTotal,
+        listTypes: ["sebae", "fourth"]
+      });
+      renderGoalCalculator();
+      renderUsedPostcardPanel();
+
+      renderEntryRows({
+        listType: "sebae",
+        sourceEntries: entriesByList.sebae || [],
+        tableBodyTarget: combinedSebaeBody,
+        emptyTarget: combinedSebaeEmpty,
+        progressTarget: combinedSebaeProgress,
+        query
+      });
+
+      renderEntryRows({
+        listType: "fourth",
+        sourceEntries: entriesByList.fourth || [],
+        tableBodyTarget: combinedFourthBody,
+        emptyTarget: combinedFourthEmpty,
+        progressTarget: combinedFourthProgress,
+        query
+      });
+    }
+
+    openModal = function (item = null, listType = currentListType) {
+      modalListType = listType || currentListType;
+      editingId = item?.id ?? null;
+      editingSource = item?.__source || "personal";
+      const isSharedItem = editingId && editingSource === "shared";
+      modalTitle.textContent = isSharedItem ? "공통 길드지급 항목 관리" : (editingId ? "명단 수정" : "명단 추가");
+      deleteEntryBtn.classList.toggle("hidden", !editingId);
+      deleteAllEntryBtn.classList.toggle("hidden", !(isSharedItem && canManageSharedStaff()));
+      saveEntryBtn.classList.toggle("hidden", Boolean(isSharedItem));
+
+      resetCustomPaidItemInputs();
+      nicknameInput.value = item?.nickname ?? "";
+      dateInput.value = item?.category === "판매" ? (item?.date ?? "") : "";
+      noteInput.value = getNote(item);
+      selectedCategory = item?.category ?? "판매";
+      selectedPaymentType = item?.__source === "shared" ? "길드지급" : (item?.paymentType ?? "개인지급");
+
+      const defaultListType = modalListType || currentListType || "sebae";
+      const priceMode = item?.paidItemMode === "custom" ? "custom" : "default";
+      setSelectedListTypes(editingId ? [{ listType: defaultListType, paidItemMode: priceMode }] : [getDefaultTargetForModal(defaultListType)]);
+
+      if (priceMode === "custom") {
+        setCustomPaidItemInputsFromGroups(item?.paidItemGroups || item?.customPaidItems || []);
+      }
+
+      syncCustomPaidItemsVisibility();
+      setListTypeFieldDisabled(Boolean(editingId));
+      nicknameInput.disabled = Boolean(isSharedItem);
+      dateInput.disabled = Boolean(isSharedItem);
+      noteInput.disabled = Boolean(isSharedItem);
+      setCustomPaidItemInputsDisabled(Boolean(isSharedItem));
+
+      document.querySelectorAll(".seg-btn[data-category]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.category === selectedCategory);
+      });
+
+      document.querySelectorAll(".payment-btn").forEach((button) => {
+        button.classList.toggle("active", button.dataset.paymentType === selectedPaymentType);
+        button.disabled = Boolean(isSharedItem);
+      });
+
+      document.querySelectorAll(".seg-btn[data-category]").forEach((button) => {
+        button.disabled = Boolean(isSharedItem);
+      });
+
+      modalBackdrop.classList.remove("hidden");
+      setTimeout(() => nicknameInput.focus(), 0);
+    }
+
+    closeModal = function () {
+      modalBackdrop.classList.add("hidden");
+      editingId = null;
+      editingSource = "personal";
+      modalListType = null;
+      nicknameInput.value = "";
+      dateInput.value = "";
+      noteInput.value = "";
+      selectedCategory = "판매";
+      selectedPaymentType = "개인지급";
+      setSelectedListTypes([]);
+      resetCustomPaidItemInputs();
+      syncCustomPaidItemsVisibility();
+      setListTypeFieldDisabled(false);
+      nicknameInput.disabled = false;
+      dateInput.disabled = false;
+      noteInput.disabled = false;
+      setCustomPaidItemInputsDisabled(false);
+      saveEntryBtn.classList.remove("hidden");
+      deleteAllEntryBtn.classList.add("hidden");
+
+      document.querySelectorAll(".seg-btn[data-category]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.category === "판매");
+      });
+
+      document.querySelectorAll(".payment-btn").forEach((button) => {
+        button.classList.toggle("active", button.dataset.paymentType === "개인지급");
+        button.disabled = false;
+      });
+
+      document.querySelectorAll(".seg-btn[data-category]").forEach((button) => {
+        button.disabled = false;
+      });
+    }
+
+    createExportRows = function (listType, sourceEntries) {
+      return getEntriesForExport(listType, sourceEntries).map((item) => {
+        const marks = normalizePaidMarks(item, listType);
+        const paidMarkText = getPaidMarkOptions(listType, item)
+          .map((option) => `${option.label}:${marks[option.key] ? "O" : ""}`)
+          .join(" / ");
+
+        return {
+          "엽서종류": listMeta[listType]?.title || listType,
+          "가격구성": item.paidItemMode === "custom" ? "기타" : "기본",
+          "닉네임": item.nickname || "",
+          "구분": item.category || "",
+          "지급방식": getPaymentType(item),
+          "지급시기": getDisplayDate(item),
+          "지급여부": shouldRenderPaidMarks(item) ? paidMarkText : "",
+          "상태": item.category === "판매" ? getStatus(item) : "",
+          "상승테 여부": isRisingTe(item) ? "O" : "",
+          "완료": item.done ? "O" : "",
+          "비고": getNote(item)
+        };
+      });
+    }
+
+    saveEntry = async function () {
+      if (editingSource === "shared") {
+        showToast("공통 길드지급 항목은 여기서 수정할 수 없습니다.");
+        return;
+      }
+
+      const targetListType = modalListType || currentListType;
+      const selectedTargets = editingId
+        ? [{
+            listType: targetListType,
+            paidItemMode: getSelectedPostcardTargets()[0]?.paidItemMode || "default"
+          }]
+        : getSelectedPostcardTargets();
+
+      if (!editingId && selectedTargets.length === 0) {
+        showToast("엽서종류를 하나 이상 선택해주세요.");
+        return;
+      }
+
+      if (editingId && !targetListType) {
+        showToast("목록을 먼저 선택해주세요.");
+        return;
+      }
+
+      const rawNickname = nicknameInput.value.trim();
+      const nicknameList = editingId
+        ? [rawNickname.replace(/\s+/g, " ")]
+        : rawNickname
+            .split(/[,，\n]/)
+            .map((name) => name.trim().replace(/\s+/g, " "))
+            .filter(Boolean);
+
+      const date = selectedCategory === "판매"
+        ? normalizeDateInput(dateInput.value.trim())
+        : "";
+      const note = noteInput.value.trim();
+
+      if (nicknameList.length === 0) {
+        showToast("닉네임을 입력해주세요.");
+        nicknameInput.focus();
+        return;
+      }
+
+      if (selectedCategory === "판매" && !isValidDateText(date)) {
+        showToast("판매 항목의 지급시기는 4/28 또는 10/03, 보류처럼 입력해주세요.");
+        dateInput.focus();
+        return;
+      }
+
+      const hasCustomTarget = selectedTargets.some((target) => target.paidItemMode === "custom");
+      let customPaidItemGroups = [];
+
+      if (hasCustomTarget) {
+        customPaidItemGroups = getCustomPaidItemGroupsFromInputs();
+        if (customPaidItemGroups.length === 0) {
+          showToast("기타 가격 구성의 엽서와 수량을 하나 이상 입력해주세요.");
+          return;
+        }
+      }
+
+      const shouldSaveAsShared = !editingId
+        && selectedPaymentType === "길드지급"
+        && canManageSharedStaff();
+
+      try {
+        const entriesByTarget = {};
+        const duplicateItems = [];
+
+        for (const target of selectedTargets) {
+          const listType = target.listType;
+          const sourceEntries = shouldSaveAsShared
+            ? await loadSharedEntriesForList(listType)
+            : await loadEntriesForList(listType);
+
+          const duplicateCheckEntries = await loadDuplicateCheckEntriesForList(listType);
+          entriesByTarget[listType] = sourceEntries;
+
+          const seenInInput = new Set();
+
+          nicknameList.forEach((nickname) => {
+            const normalizedNickname = normalizeNicknameForCompare(nickname);
+            const listName = listMeta[listType]?.title || listType;
+
+            if (seenInInput.has(normalizedNickname)) {
+              duplicateItems.push(`${listName}: ${nickname} 입력값 중복`);
+              return;
+            }
+
+            seenInInput.add(normalizedNickname);
+
+            const duplicateEntry = duplicateCheckEntries.find((entry) =>
+              entry.id !== editingId &&
+              normalizeNicknameForCompare(entry.nickname) === normalizedNickname
+            );
+
+            if (duplicateEntry) {
+              duplicateItems.push(`${listName}: ${nickname} 기존 ${duplicateEntry.__duplicateSource} 목록 중복`);
+            }
+          });
+        }
+
+        if (duplicateItems.length > 0) {
+          const ok = confirm(
+            `이미 같은 닉네임이 있는 항목이 있습니다.\n\n${duplicateItems.join("\n")}\n\n그래도 저장할까요?`
+          );
+
+          if (!ok) return;
+        }
+
+        if (editingId) {
+          const nickname = nicknameList[0];
+          const sourceEntries = entriesByTarget[targetListType] || [];
+          const selectedTarget = selectedTargets[0];
+
+          const nextEntries = sourceEntries.map((entry) => {
+            if (entry.id !== editingId) return entry;
+
+            const paidItemData = selectedTarget.paidItemMode === "custom"
+              ? { paidItemMode: "custom", paidItemGroups: customPaidItemGroups }
+              : { paidItemMode: "default", paidItemGroups: [] };
+
+            const nextEntry = {
+              ...entry,
+              nickname,
+              category: selectedCategory,
+              paymentType: selectedPaymentType,
+              date,
+              note,
+              ...paidItemData,
+              status: selectedCategory === "판매" ? normalizeStatus(entry.status) : "",
+              paid: false
+            };
+
+            return {
+              ...nextEntry,
+              paidMarks: normalizePaidMarks({ ...nextEntry, paidMarks: entry.paidMarks }, targetListType)
+            };
+          });
+
+          await saveEntriesForList(targetListType, nextEntries);
+          closeModal();
+          showToast("수정했습니다.");
+          return;
+        }
+
+        await Promise.all(
+          selectedTargets.map(async (target) => {
+            const listType = target.listType;
+            const sourceEntries = entriesByTarget[listType] || [];
+            const paidItemData = target.paidItemMode === "custom"
+              ? { paidItemMode: "custom", paidItemGroups: customPaidItemGroups }
+              : { paidItemMode: "default", paidItemGroups: [] };
+
+            const nextEntries = [
+              ...sourceEntries,
+              ...nicknameList.map((nickname) => {
+                const entry = {
+                  id: createId(),
+                  nickname,
+                  category: selectedCategory,
+                  paymentType: shouldSaveAsShared ? "길드지급" : selectedPaymentType,
+                  date,
+                  note,
+                  ...paidItemData,
+                  status: selectedCategory === "판매" ? "미지급" : "",
+                  done: false,
+                  paid: false,
+                  risingTe: false,
+                  createdAt: Date.now(),
+                  createdBy: currentUser.uid,
+                  createdByEmail: currentUser.email,
+                  shared: shouldSaveAsShared
+                };
+
+                return {
+                  ...entry,
+                  paidMarks: normalizePaidMarks(entry, listType)
+                };
+              })
+            ];
+
+            if (shouldSaveAsShared) {
+              await saveSharedEntriesForList(listType, nextEntries);
+            } else {
+              await saveEntriesForList(listType, nextEntries);
+            }
+          })
+        );
+
+        closeModal();
+
+        const totalAdded = nicknameList.length * selectedTargets.length;
+
+        if (shouldSaveAsShared) {
+          showToast(`${totalAdded}개의 공통 길드지급 항목을 추가했습니다.`);
+        } else {
+          showToast(`${totalAdded}개의 명단을 추가했습니다.`);
+        }
+      } catch (error) {
+        console.error(error);
+        if (error?.message === "CUSTOM_PAID_ITEMS_EMPTY") {
+          showToast("기타 가격 구성의 엽서와 수량을 하나 이상 입력해주세요.");
+          return;
+        }
+        showToast("저장에 실패했습니다.");
+      }
+    }
+
+    postcardOptionInputs.forEach((input) => {
+      input.addEventListener("change", () => {
+        if (input.checked) {
+          postcardOptionInputs.forEach((otherInput) => {
+            if (otherInput === input) return;
+            if (otherInput.dataset.listType === input.dataset.listType) {
+              otherInput.checked = false;
+            }
+          });
+        }
+
+        syncCustomPaidItemsVisibility();
+      });
+    });
+
+    if (addCustomEtcBtn) {
+      addCustomEtcBtn.addEventListener("click", () => addCustomEtcRow());
     }
 
     loadNoticeSettings();
