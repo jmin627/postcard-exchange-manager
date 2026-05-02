@@ -442,7 +442,7 @@
     }
 
     .modal {
-      width: min(680px, 100%);
+      width: min(860px, 100%);
       max-height: calc(100vh - 40px);
       overflow-y: auto;
       padding: 24px;
@@ -576,8 +576,13 @@
 
     .misc-composer-grid {
       display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 8px;
       margin-top: 8px;
+    }
+
+    .misc-composer-area .custom-etc-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .misc-composer-row {
@@ -1127,12 +1132,16 @@
 
     @media (max-width: 720px) {
       .custom-paid-grid,
-      .usage-grid {
+      .usage-grid,
+      .misc-composer-grid,
+      .misc-composer-area .custom-etc-list {
         grid-template-columns: 1fr;
       }
 
       .custom-paid-row,
-      .custom-etc-row {
+      .custom-etc-row,
+      .misc-composer-row,
+      .misc-composer-row.price-only {
         grid-template-columns: 1fr;
       }
     }
@@ -1797,6 +1806,15 @@
         <input id="nicknameInput" type="text" placeholder="닉네임 입력, 여러 명은 쉼표(,)로 구분" autocomplete="off" />
       </div>
 
+      <div class="field" id="categoryField">
+        <label>구분</label>
+        <div class="segmented">
+          <button type="button" class="seg-btn active" data-category="판매">판매</button>
+          <button type="button" class="seg-btn" data-category="교환">교환</button>
+          <button type="button" class="seg-btn" data-category="기부">기부</button>
+        </div>
+      </div>
+
       <div class="field" id="listTypeField">
         <label>엽서종류</label>
         <div class="checkbox-row">
@@ -1881,20 +1899,11 @@
 
       <div class="field misc-composer-area hidden" id="miscRisingField">
         <label>상승테 적용 대상</label>
-        <p class="hint">엽서종류가 여러 개이거나 수량이 2개 이상이면 +1을 적용할 엽서를 직접 선택해주세요.</p>
+        <p class="hint">엽서종류별로 상승테를 적용할 수량을 입력해주세요. 적용 수량은 해당 엽서 수량을 넘을 수 없습니다.</p>
         <div id="miscRisingChoices" class="misc-rising-list"></div>
       </div>
 
-      <div class="field">
-        <label>구분</label>
-        <div class="segmented">
-          <button type="button" class="seg-btn active" data-category="판매">판매</button>
-          <button type="button" class="seg-btn" data-category="교환">교환</button>
-          <button type="button" class="seg-btn" data-category="기부">기부</button>
-        </div>
-      </div>
-
-      <div class="field">
+      <div class="field" id="paymentTypeField">
         <label>지급방식</label>
         <div class="segmented">
           <button type="button" class="payment-btn seg-btn active" data-payment-type="개인지급">개인지급</button>
@@ -5807,7 +5816,7 @@
     const baseRenderPaymentCellForMiscPatch = renderPaymentCell;
     renderPaymentCell = function (item, listType = currentListType) {
       if (listType === "misc") {
-        if (!shouldRenderPaidMarks(item)) return "";
+        if (item?.category !== "판매") return "";
         return renderMiscPriceCell(item);
       }
       return baseRenderPaymentCellForMiscPatch(item, listType);
@@ -5816,7 +5825,7 @@
     const baseIsPaymentCompleteForMiscPatch = isPaymentComplete;
     isPaymentComplete = function (item, listType = currentListType) {
       if (listType === "misc") {
-        if (!shouldRenderPaidMarks(item)) return true;
+        if (item?.category !== "판매") return true;
         const marks = normalizePaidMarks(item, "misc");
         const checkedOptionsComplete = getPaidMarkOptions("misc", item).every((option) => marks[option.key] === true);
         const counts = normalizeMiscPaidCounts(item);
@@ -5885,6 +5894,7 @@
       ALL_LIST_TYPES.forEach((listType) => {
         (entriesByList[listType] || []).forEach((item) => {
           if (item.category === "기부") return;
+          if (listType === "misc" && item.category !== "판매") return;
           const groups = getPaidItemGroupsForItem(listType, item);
           const marks = normalizePaidMarks(item, listType);
           const paidCountsByGroup = listType === "misc" ? normalizeMiscPaidCounts(item) : {};
@@ -5950,8 +5960,8 @@
             <td class="col-category strike-cell"><span class="type-badge">${highlightText(item.category, query)}</span></td>
             <td class="col-payment strike-cell">${highlightText(getPaymentType(item), query)}</td>
             <td class="col-date strike-cell">${highlightText(getDisplayDate(item), query)}</td>
-            <td class="col-price">${renderPaymentCell(item, "misc")}</td>
-            <td class="col-status">${renderStatusCell(item)}</td>
+            <td class="col-price">${item.category === "판매" ? renderPaymentCell(item, "misc") : ""}</td>
+            <td class="col-status">${item.category === "판매" ? renderStatusCell(item) : ""}</td>
             <td class="col-edit"><button type="button" class="edit-btn">수정</button></td>
             <td class="col-note strike-cell">${highlightText(getNote(item), query)}</td>
           `;
@@ -6132,15 +6142,25 @@
       renderEntryRows({ listType: "misc", sourceEntries: entriesByList.misc || [], tableBodyTarget: combinedMiscBody, emptyTarget: combinedMiscEmpty, progressTarget: combinedMiscProgress, query });
     }
 
+    function isMiscPriceNeeded() {
+      return modalListType === "misc" && selectedCategory === "판매";
+    }
+
+    function updateMiscPriceVisibility() {
+      if (!miscPriceItemsField) return;
+      miscPriceItemsField.classList.toggle("hidden", !isMiscPriceNeeded());
+    }
+
     function setModalModeForMisc(isMisc, isSharedItem = false) {
       listTypeField?.classList.toggle("hidden", isMisc);
       customPaidItemsField?.classList.toggle("hidden", isMisc || customPaidItemsField.classList.contains("hidden"));
       miscPostcardItemsField?.classList.toggle("hidden", !isMisc);
-      miscPriceItemsField?.classList.toggle("hidden", !isMisc);
+      miscPriceItemsField?.classList.toggle("hidden", !isMisc || selectedCategory !== "판매");
       miscRisingField?.classList.toggle("hidden", !isMisc);
       if (isMisc) {
         setMiscComposerDisabled(Boolean(isSharedItem));
         updateMiscRisingChoices();
+        updateMiscPriceVisibility();
       }
     }
 
@@ -6170,6 +6190,7 @@
 
       if (item) setMiscComposerInputsFromEntry(item);
       setModalModeForMisc(true, !canEditThisItem);
+      updateMiscPriceVisibility();
       nicknameInput.disabled = !canEditThisItem;
       dateInput.disabled = !canEditThisItem;
       noteInput.disabled = !canEditThisItem;
@@ -6201,7 +6222,7 @@
       const date = selectedCategory === "판매" ? normalizeDateInput(dateInput.value.trim()) : "";
       const note = noteInput.value.trim();
       const miscItems = getMiscPostcardItemsFromInputs();
-      const priceGroups = getMiscPriceGroupsFromInputs();
+      const priceGroups = selectedCategory === "판매" ? getMiscPriceGroupsFromInputs() : [];
       const shouldSaveAsShared = !editingId && selectedPaymentType === "길드지급" && canManageSharedStaff();
 
       if (nicknameList.length === 0) {
@@ -6213,8 +6234,8 @@
         showToast("엽서종류와 수량, 수치를 하나 이상 입력해주세요.");
         return;
       }
-      if (shouldRenderPaidMarks({ category: selectedCategory }) && priceGroups.length === 0) {
-        showToast("판매/교환 항목은 엽서가격을 하나 이상 입력해주세요.");
+      if (selectedCategory === "판매" && priceGroups.length === 0) {
+        showToast("판매 항목은 엽서가격을 하나 이상 입력해주세요.");
         return;
       }
       if (selectedCategory === "판매" && !isValidDateText(date)) {
@@ -6250,7 +6271,7 @@
             miscPostcardItems: miscItems,
             paidItemMode: "custom",
             paidItemGroups: priceGroups,
-            status: shouldRenderPaidMarks({ category: selectedCategory }) ? normalizeStatus(currentEntry.status) : "",
+            status: selectedCategory === "판매" ? normalizeStatus(currentEntry.status) : "",
             paidMarks: normalizePaidMarks({ ...currentEntry, paidItemGroups: priceGroups, paidItemMode: "custom" }, "misc"),
             paidCounts: normalizeMiscPaidCounts({ ...currentEntry, paidItemGroups: priceGroups }),
             paid: false,
@@ -6283,7 +6304,7 @@
             miscPostcardItems: miscItems,
             paidItemMode: "custom",
             paidItemGroups: priceGroups,
-            status: shouldRenderPaidMarks({ category: selectedCategory }) ? "미지급" : "",
+            status: selectedCategory === "판매" ? "미지급" : "",
             done: false,
             paid: false,
             paidMarks: {},
@@ -6305,7 +6326,7 @@
               miscPostcardItems: [...normalizeMiscPostcardItems(existing.miscPostcardItems || []), ...miscItems],
               paidItemMode: "custom",
               paidItemGroups: [...normalizePaidItemGroups(existing.paidItemGroups || []), ...priceGroups],
-              status: shouldRenderPaidMarks({ category: selectedCategory }) ? normalizeStatus(existing.status) : "",
+              status: selectedCategory === "판매" ? normalizeStatus(existing.status) : "",
               updatedAt: Date.now(),
               updatedBy: currentUser.uid,
               updatedByEmail: currentUser.email
@@ -6599,6 +6620,10 @@
         document.querySelectorAll(".seg-btn[data-category]").forEach((target) => {
           target.classList.toggle("active", target.dataset.category === selectedCategory);
         });
+
+        if (modalListType === "misc") {
+          updateMiscPriceVisibility();
+        }
       });
     });
 
