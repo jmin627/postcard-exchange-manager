@@ -325,6 +325,45 @@
       background: var(--sale);
     }
 
+    .paid-complete-row {
+      background: #ecfff3 !important;
+      box-shadow: inset 5px 0 0 #26a269;
+    }
+
+    .paid-complete-row.done-row {
+      opacity: 1;
+    }
+
+    .paid-complete-row.done-row .strike-cell {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .paid-complete-row .status-select {
+      border-color: #26a269;
+      background: #f2fff7;
+      color: #16803f;
+    }
+
+    .paid-complete-row .paid-mark,
+    .paid-complete-row .paid-count-mark {
+      border-color: #8fd6a8;
+      background: #f8fffb;
+    }
+
+    .paid-complete-badge {
+      display: inline-flex;
+      margin-left: 6px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #dff8e8;
+      color: #16803f;
+      font-size: 11px;
+      font-weight: 900;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
     .check {
       width: 22px;
       height: 22px;
@@ -3362,11 +3401,13 @@
         groupEntries.forEach((item) => {
           const row = document.createElement("tr");
           const isMatched = rowMatchesQuery(item, query);
+          const isPaidComplete = item.category === "판매" && getStatus(item) === "지급완";
 
           row.className = [
             item.category === "기부" ? "donate-row" : "",
             item.category === "교환" ? "trade-row" : "",
             item.category === "판매" ? "sale-row" : "",
+            isPaidComplete ? "paid-complete-row" : "",
             item.__source === "shared" ? "shared-row" : "",
             item.done ? "done-row" : "",
             query && isMatched ? "matched-row" : "",
@@ -3380,6 +3421,7 @@
             <td class="col-name strike-cell">
               ${highlightText(item.nickname, query)}
               ${item.__source === "shared" ? '<span class="shared-badge">공통</span>' : ""}
+              ${isPaidComplete ? '<span class="paid-complete-badge">지급완</span>' : ""}
             </td>
             <td class="col-category strike-cell"><span class="type-badge">${highlightText(item.category, query)}</span></td>
             <td class="col-payment strike-cell">${highlightText(getPaymentType(item), query)}</td>
@@ -5943,10 +5985,12 @@
         groupEntries.forEach((item) => {
           const row = document.createElement("tr");
           const isMatched = rowMatchesQuery(item, query);
+          const isPaidComplete = item.category === "판매" && getStatus(item) === "지급완";
           row.className = [
             item.category === "기부" ? "donate-row" : "",
             item.category === "교환" ? "trade-row" : "",
             item.category === "판매" ? "sale-row" : "",
+            isPaidComplete ? "paid-complete-row" : "",
             item.__source === "shared" ? "shared-row" : "",
             item.done ? "done-row" : "",
             query && isMatched ? "matched-row" : "",
@@ -5955,7 +5999,7 @@
 
           row.innerHTML = `
             <td class="col-done"><input class="check done-check" type="checkbox" ${item.done ? "checked" : ""} aria-label="완료 표시" /></td>
-            <td class="col-name strike-cell">${highlightText(item.nickname, query)}${item.__source === "shared" ? '<span class="shared-badge">공통</span>' : ""}</td>
+            <td class="col-name strike-cell">${highlightText(item.nickname, query)}${item.__source === "shared" ? '<span class="shared-badge">공통</span>' : ""}${isPaidComplete ? '<span class="paid-complete-badge">지급완</span>' : ""}</td>
             <td class="col-postcard-kind strike-cell">${formatMiscPostcardItems(item)}</td>
             <td class="col-category strike-cell"><span class="type-badge">${highlightText(item.category, query)}</span></td>
             <td class="col-payment strike-cell">${highlightText(getPaymentType(item), query)}</td>
