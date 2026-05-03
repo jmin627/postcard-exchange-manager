@@ -2968,14 +2968,33 @@
     }
 
     const STATUS_OPTIONS = ["미지급", "접선대기중", "접메완", "지급중", "지급완"];
+    const EXCHANGE_STATUS_OPTIONS = ["접선대기중", "예약완"];
 
-    function getStatus(item) {
-      return item?.status || "미지급";
+    function getStatusOptions(item = null) {
+      return item?.category === "교환" ? EXCHANGE_STATUS_OPTIONS : STATUS_OPTIONS;
     }
 
-    function normalizeStatus(value) {
+    function getDefaultStatusForItem(item = null) {
+      return item?.category === "교환" ? "접선대기중" : "미지급";
+    }
+
+    function getStatus(item) {
+      return item?.status || getDefaultStatusForItem(item);
+    }
+
+    function normalizeStatus(value, item = null) {
       const raw = String(value || "").trim();
-      return STATUS_OPTIONS.includes(raw) ? raw : "미지급";
+      const options = getStatusOptions(item);
+      return options.includes(raw) ? raw : getDefaultStatusForItem(item);
+    }
+
+    function isVisuallyCompleteStatus(item) {
+      return (item?.category === "판매" && getStatus(item) === "지급완")
+        || (item?.category === "교환" && getStatus(item) === "예약완");
+    }
+
+    function getCompleteStatusBadgeLabel(item) {
+      return item?.category === "교환" ? "예약완" : "지급완";
     }
 
     function renderPaymentCell(item, listType = currentListType) {
@@ -2984,13 +3003,14 @@
     }
 
     function renderStatusCell(item) {
-      if (item?.category !== "판매") return "";
+      if (item?.category !== "판매" && item?.category !== "교환") return "";
 
-      const currentStatus = normalizeStatus(getStatus(item));
+      const currentStatus = normalizeStatus(getStatus(item), item);
+      const options = getStatusOptions(item);
 
       return `
         <select class="status-select" aria-label="상태 선택">
-          ${STATUS_OPTIONS.map((status) => `
+          ${options.map((status) => `
             <option value="${status}" ${status === currentStatus ? "selected" : ""}>${status}</option>
           `).join("")}
         </select>
@@ -3224,17 +3244,20 @@
     }
 
     async function loadDuplicateCheckEntriesForList(listType) {
-      const [personalEntries, sharedEntries] = await Promise.all([
+      const [personalEntries, sharedEntries, sharedStateSnapshot] = await Promise.all([
         loadEntriesForList(listType),
-        loadSharedEntriesForList(listType)
+        loadSharedEntriesForList(listType),
+        getDoc(getSharedStateRef(listType))
       ]);
+
+      const sharedStates = sharedStateSnapshot.data()?.states || {};
 
       return [
         ...personalEntries
           .filter((entry) => entry.deleted !== true)
           .map((entry) => ({ ...entry, __duplicateSource: "개인" })),
         ...sharedEntries
-          .filter((entry) => entry.deleted !== true)
+          .filter((entry) => entry.deleted !== true && sharedStates[entry.id]?.hidden !== true)
           .map((entry) => ({ ...entry, __duplicateSource: "공통" }))
       ];
     }
@@ -3253,7 +3276,11 @@
       const totalVisible = visibleEntries.length;
       const totalAll = sourceEntries.length;
       const doneCount = visibleEntries.filter((item) => item.done === true).length;
-      const paymentCompleteCount = visibleEntries.filter((item) => isPaymentComplete(item, listType)).length;
+      const paymentCompleteCount = visibleEntries.filter((item) => {
+        if (item?.category === "판매") return getStatus(item) === "지급완" || isPaymentComplete(item, listType);
+        if (item?.category === "교환") return getStatus(item) === "예약완";
+        return true;
+      }).length;
 
       const filterText = categoryFilter === "all" ? "전체" : `${categoryFilter}만`;
       const paymentText = paymentIncompleteOnly ? " · 지급 미완료만" : "";
@@ -3401,7 +3428,7 @@
         groupEntries.forEach((item) => {
           const row = document.createElement("tr");
           const isMatched = rowMatchesQuery(item, query);
-          const isPaidComplete = item.category === "판매" && getStatus(item) === "지급완";
+          const isPaidComplete = isVisuallyCompleteStatus(item);
 
           row.className = [
             item.category === "기부" ? "donate-row" : "",
@@ -3421,7 +3448,7 @@
             <td class="col-name strike-cell">
               ${highlightText(item.nickname, query)}
               ${item.__source === "shared" ? '<span class="shared-badge">공통</span>' : ""}
-              ${isPaidComplete ? '<span class="paid-complete-badge">지급완</span>' : ""}
+              ${isPaidComplete ? `<span class="paid-complete-badge">${escapeHtml(getCompleteStatusBadgeLabel(item))}</span>` : ""}
             </td>
             <td class="col-category strike-cell"><span class="type-badge">${highlightText(item.category, query)}</span></td>
             <td class="col-payment strike-cell">${highlightText(getPaymentType(item), query)}</td>
@@ -3517,27 +3544,27 @@
           const statusSelect = row.querySelector(".status-select");
           if (statusSelect) {
             statusSelect.addEventListener("change", async (event) => {
-              const status = normalizeStatus(event.target.value);
-              const nextPaidMarks = status === "지급완"
-                ? getAllPaidMarksChecked(listType, item)
-                : normalizePaidMarks({ ...item, paidMarks: {} }, listType);
+              const status = normalizeStatus(event.target.value, item);
+              const statusPatch = item.category === "판매"
+                ? {
+                    status,
+                    paidMarks: status === "지급완"
+                      ? getAllPaidMarksChecked(listType, item)
+                      : normalizePaidMarks({ ...item, paidMarks: {} }, listType),
+                    paid: false
+                  }
+                : { status };
 
               try {
                 if (item.__source === "shared") {
-                  await updateSharedItemState(listType, item.id, {
-                    status,
-                    paidMarks: nextPaidMarks,
-                    paid: false
-                  });
+                  await updateSharedItemState(listType, item.id, statusPatch);
                 } else {
                   const source = getPersonalEntriesForList(listType);
                   const nextEntries = source.map((entry) =>
                     entry.id === item.id
                       ? {
                           ...entry,
-                          status,
-                          paidMarks: nextPaidMarks,
-                          paid: false
+                          ...statusPatch
                         }
                       : entry
                   );
@@ -3933,8 +3960,8 @@
             ? normalizeDateInput(getExcelCell(row, ["지급시기", "날짜", "date"]))
             : "";
           const note = getExcelCell(row, ["비고", "메모", "note", "memo"]);
-          const status = category === "판매"
-            ? normalizeStatus(getExcelCell(row, ["상태", "상태창", "지급상태", "status"]))
+          const status = category === "판매" || category === "교환"
+            ? normalizeStatus(getExcelCell(row, ["상태", "상태창", "지급상태", "status"]), { category })
             : "";
           const risingTe = parseExcelBoolean(getExcelCell(row, ["상승테 여부", "상승테", "상승", "risingTe"]));
           const done = parseExcelBoolean(getExcelCell(row, ["완료", "받음", "받은여부", "done"]));
@@ -4158,7 +4185,7 @@
               paymentType: selectedPaymentType,
               date,
               note,
-              status: selectedCategory === "판매" ? normalizeStatus(entry.status) : "",
+              status: (selectedCategory === "판매" || selectedCategory === "교환") ? normalizeStatus(entry.status, { category: selectedCategory }) : "",
               paidMarks: normalizePaidMarks(entry, targetListType),
               paid: false
             };
@@ -4183,7 +4210,7 @@
                 paymentType: shouldSaveAsShared ? "길드지급" : selectedPaymentType,
                 date,
                 note,
-                status: selectedCategory === "판매" ? "미지급" : "",
+                status: selectedCategory === "교환" ? "접선대기중" : (selectedCategory === "판매" ? "미지급" : ""),
                 done: false,
                 paid: false,
                 paidMarks: normalizePaidMarks({}, listType),
@@ -4538,7 +4565,7 @@
     }
 
     function shouldRenderPaidMarks(item) {
-      return item?.category === "판매" || item?.category === "교환";
+      return item?.category === "판매";
     }
 
     renderPaymentCell = function (item, listType = currentListType) {
@@ -5189,7 +5216,7 @@
             date,
             note,
             ...paidItemData,
-            status: selectedCategory === "판매" ? normalizeStatus(currentEntry.status) : "",
+            status: (selectedCategory === "판매" || selectedCategory === "교환") ? normalizeStatus(currentEntry.status, { category: selectedCategory }) : "",
             paid: false,
             updatedAt: Date.now(),
             updatedBy: currentUser.uid,
@@ -5241,7 +5268,7 @@
                   date,
                   note,
                   ...paidItemData,
-                  status: selectedCategory === "판매" ? "미지급" : "",
+                  status: selectedCategory === "교환" ? "접선대기중" : (selectedCategory === "판매" ? "미지급" : ""),
                   done: false,
                   paid: false,
                   risingTe: false,
@@ -5831,7 +5858,7 @@
     }
 
     shouldRenderPaidMarks = function (item) {
-      return item?.category === "판매" || item?.category === "교환";
+      return item?.category === "판매";
     }
 
     const baseGetPaidMarkOptionsForMiscPatch = getPaidMarkOptions;
@@ -5885,7 +5912,7 @@
     applyViewFilters = function (sourceEntries, listType) {
       return sourceEntries.filter((item) => {
         const categoryMatches = categoryFilter === "all" || item.category === categoryFilter;
-        const paymentMatches = !paymentIncompleteOnly || getStatus(item) !== "지급완";
+        const paymentMatches = !paymentIncompleteOnly || !isVisuallyCompleteStatus(item);
         return categoryMatches && paymentMatches;
       });
     }
@@ -5985,7 +6012,7 @@
         groupEntries.forEach((item) => {
           const row = document.createElement("tr");
           const isMatched = rowMatchesQuery(item, query);
-          const isPaidComplete = item.category === "판매" && getStatus(item) === "지급완";
+          const isPaidComplete = isVisuallyCompleteStatus(item);
           row.className = [
             item.category === "기부" ? "donate-row" : "",
             item.category === "교환" ? "trade-row" : "",
@@ -5999,13 +6026,13 @@
 
           row.innerHTML = `
             <td class="col-done"><input class="check done-check" type="checkbox" ${item.done ? "checked" : ""} aria-label="완료 표시" /></td>
-            <td class="col-name strike-cell">${highlightText(item.nickname, query)}${item.__source === "shared" ? '<span class="shared-badge">공통</span>' : ""}${isPaidComplete ? '<span class="paid-complete-badge">지급완</span>' : ""}</td>
+            <td class="col-name strike-cell">${highlightText(item.nickname, query)}${item.__source === "shared" ? '<span class="shared-badge">공통</span>' : ""}${isPaidComplete ? `<span class="paid-complete-badge">${escapeHtml(getCompleteStatusBadgeLabel(item))}</span>` : ""}</td>
             <td class="col-postcard-kind strike-cell">${formatMiscPostcardItems(item)}</td>
             <td class="col-category strike-cell"><span class="type-badge">${highlightText(item.category, query)}</span></td>
             <td class="col-payment strike-cell">${highlightText(getPaymentType(item), query)}</td>
             <td class="col-date strike-cell">${highlightText(getDisplayDate(item), query)}</td>
             <td class="col-price">${item.category === "판매" ? renderPaymentCell(item, "misc") : ""}</td>
-            <td class="col-status">${item.category === "판매" ? renderStatusCell(item) : ""}</td>
+            <td class="col-status">${renderStatusCell(item)}</td>
             <td class="col-edit"><button type="button" class="edit-btn">수정</button></td>
             <td class="col-note strike-cell">${highlightText(getNote(item), query)}</td>
           `;
@@ -6062,11 +6089,15 @@
           const statusSelect = row.querySelector(".status-select");
           if (statusSelect) {
             statusSelect.addEventListener("change", async (event) => {
-              const status = normalizeStatus(event.target.value);
+              const status = normalizeStatus(event.target.value, item);
               try {
-                const nextMarks = status === "지급완" ? getAllPaidMarksChecked("misc", item) : normalizePaidMarks({ ...item, paidMarks: {} }, "misc");
-                const nextCounts = status === "지급완" ? getFullMiscPaidCounts(item) : clearMiscPaidCounts(item);
-                await saveMiscPatchForItem(item, { status, paidMarks: nextMarks, paidCounts: nextCounts, paid: false });
+                if (item.category === "판매") {
+                  const nextMarks = status === "지급완" ? getAllPaidMarksChecked("misc", item) : normalizePaidMarks({ ...item, paidMarks: {} }, "misc");
+                  const nextCounts = status === "지급완" ? getFullMiscPaidCounts(item) : clearMiscPaidCounts(item);
+                  await saveMiscPatchForItem(item, { status, paidMarks: nextMarks, paidCounts: nextCounts, paid: false });
+                } else {
+                  await saveMiscPatchForItem(item, { status });
+                }
               } catch (error) {
                 console.error(error);
                 showToast("상태 저장에 실패했습니다.");
@@ -6316,7 +6347,7 @@
             miscPostcardItems: miscItems,
             paidItemMode: "custom",
             paidItemGroups: priceGroups,
-            status: selectedCategory === "판매" ? normalizeStatus(currentEntry.status) : "",
+            status: (selectedCategory === "판매" || selectedCategory === "교환") ? normalizeStatus(currentEntry.status, { category: selectedCategory }) : "",
             paidMarks: normalizePaidMarks({ ...currentEntry, paidItemGroups: priceGroups, paidItemMode: "custom" }, "misc"),
             paidCounts: normalizeMiscPaidCounts({ ...currentEntry, paidItemGroups: priceGroups }),
             paid: false,
@@ -6349,7 +6380,7 @@
             miscPostcardItems: miscItems,
             paidItemMode: "custom",
             paidItemGroups: priceGroups,
-            status: selectedCategory === "판매" ? "미지급" : "",
+            status: selectedCategory === "교환" ? "접선대기중" : (selectedCategory === "판매" ? "미지급" : ""),
             done: false,
             paid: false,
             paidMarks: {},
@@ -6371,7 +6402,7 @@
               miscPostcardItems: [...normalizeMiscPostcardItems(existing.miscPostcardItems || []), ...miscItems],
               paidItemMode: "custom",
               paidItemGroups: [...normalizePaidItemGroups(existing.paidItemGroups || []), ...priceGroups],
-              status: selectedCategory === "판매" ? normalizeStatus(existing.status) : "",
+              status: (selectedCategory === "판매" || selectedCategory === "교환") ? normalizeStatus(existing.status, { category: selectedCategory }) : "",
               updatedAt: Date.now(),
               updatedBy: currentUser.uid,
               updatedByEmail: currentUser.email
@@ -6435,7 +6466,7 @@
         "지급방식": getPaymentType(item),
         "지급시기": getDisplayDate(item),
         "엽서가격": normalizePaidItemGroups(item.paidItemGroups || []).map((group) => `${group.summaryName || group.name} ${group.quantity}장`).join(" / "),
-        "상태": shouldRenderPaidMarks(item) ? getStatus(item) : "",
+        "상태": (item.category === "판매" || item.category === "교환") ? getStatus(item) : "",
         "완료": item.done ? "O" : "",
         "비고": getNote(item)
       }));
@@ -6455,7 +6486,7 @@
         "지급방식": getPaymentType(item),
         "지급시기": getDisplayDate(item),
         "엽서가격": normalizePaidItemGroups(item.paidItemGroups || []).map((group) => `${group.summaryName || group.name} ${group.quantity}장`).join(" / "),
-        "상태": shouldRenderPaidMarks(item) ? getStatus(item) : "",
+        "상태": (item.category === "판매" || item.category === "교환") ? getStatus(item) : "",
         "완료": item.done ? "O" : "",
         "비고": getNote(item)
       }));
@@ -6754,7 +6785,7 @@
             date,
             note,
             ...paidItemData,
-            status: selectedCategory === "판매" ? normalizeStatus(currentEntry.status) : "",
+            status: (selectedCategory === "판매" || selectedCategory === "교환") ? normalizeStatus(currentEntry.status, { category: selectedCategory }) : "",
             paid: false,
             updatedAt: Date.now(),
             updatedBy: currentUser.uid,
@@ -6842,7 +6873,7 @@
                 date,
                 note,
                 ...paidItemData,
-                status: selectedCategory === "판매" ? "미지급" : "",
+                status: selectedCategory === "교환" ? "접선대기중" : (selectedCategory === "판매" ? "미지급" : ""),
                 done: false,
                 paid: false,
                 risingTe: false,
@@ -7098,7 +7129,7 @@
             date,
             note,
             ...paidItemData,
-            status: selectedCategory === "판매" ? normalizeStatus(currentEntry.status) : "",
+            status: (selectedCategory === "판매" || selectedCategory === "교환") ? normalizeStatus(currentEntry.status, { category: selectedCategory }) : "",
             paid: false,
             updatedAt: Date.now(),
             updatedBy: currentUser?.uid || "",
@@ -7182,7 +7213,7 @@
                 date,
                 note,
                 ...paidItemData,
-                status: selectedCategory === "판매" ? "미지급" : "",
+                status: selectedCategory === "교환" ? "접선대기중" : (selectedCategory === "판매" ? "미지급" : ""),
                 done: false,
                 paid: false,
                 paidMarks: {},
