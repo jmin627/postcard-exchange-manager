@@ -913,24 +913,20 @@
 
     .home-status-panel {
       margin: 0 0 18px;
-      padding: 16px;
+      padding: 14px 16px;
       border: 1px solid var(--line);
       border-radius: 18px;
       background: #f8f9ff;
     }
 
-    .home-status-panel h2 {
-      margin: 0 0 14px;
-      font-size: 22px;
-      letter-spacing: -0.03em;
+    .home-status-panel .goal-progress-wrap {
+      margin-top: 0;
+      background: #fff;
     }
 
-    .home-status-panel .goal-panel {
-      margin: 0 0 14px;
-    }
-
-    .home-status-panel .usage-panel {
-      margin: 0;
+    .status-card {
+      width: min(1800px, calc(100vw - 24px));
+      max-width: none;
     }
 
     .home-buttons {
@@ -1486,7 +1482,45 @@
         </div>
 
         <div class="home-status-panel">
-          <h2>진행 현황 및 재화</h2>
+          <div class="goal-progress-wrap">
+            <div class="goal-progress-top">
+              <span>목표 달성률</span>
+              <b id="homeGoalProgressPercent">0%</b>
+            </div>
+            <div class="goal-progress-bar">
+              <div id="homeGoalProgressFill" class="goal-progress-fill"></div>
+            </div>
+            <div id="homeGoalProgressMessage" class="goal-message">목표 명성을 입력하면 진행률이 표시됩니다.</div>
+          </div>
+        </div>
+
+        <div class="big-buttons home-buttons">
+          <button id="statusBtn" type="button" class="big-btn">진행 현황 및 재화</button>
+          <button id="sebaeBtn" type="button" class="big-btn">세배엽 목록</button>
+          <button id="fourthBtn" type="button" class="big-btn">4기엽 목록</button>
+          <button id="miscBtn" type="button" class="big-btn">기타엽서 목록</button>
+          <button id="combinedBtn" type="button" class="big-btn">한눈에 보기</button>
+        </div>
+
+        <div class="admin-area">
+          <button id="adminBtn" type="button" class="small-btn hidden">유저 관리</button>
+          <button id="noticeAdminBtn" type="button" class="small-btn hidden">공지 수정</button>
+          <button id="trashBtn" type="button" class="small-btn">휴지통</button>
+      </div>
+    </div>
+  </section>
+
+
+    <section id="statusScreen" class="screen hidden">
+      <div class="card wide status-card">
+        <div class="top">
+          <div>
+            <h1>진행 현황 및 재화</h1>
+            <p>목표 명성, 현재 우칸, 목표 달성률, 매입에 사용한 엽서와 재화를 확인할 수 있습니다.</p>
+          </div>
+          <button id="backStatusHomeBtn" type="button" class="small-btn">처음으로</button>
+        </div>
+
         <div class="goal-panel">
           <div class="goal-row">
             <span>목표 명성</span>
@@ -1556,22 +1590,8 @@
             </div>
           </div>
         </div>
-        </div>
-
-        <div class="big-buttons home-buttons">
-          <button id="sebaeBtn" type="button" class="big-btn">세배엽 목록</button>
-          <button id="fourthBtn" type="button" class="big-btn">4기엽 목록</button>
-          <button id="miscBtn" type="button" class="big-btn">기타엽서 목록</button>
-          <button id="combinedBtn" type="button" class="big-btn">한눈에 보기</button>
-        </div>
-
-        <div class="admin-area">
-          <button id="adminBtn" type="button" class="small-btn hidden">유저 관리</button>
-          <button id="noticeAdminBtn" type="button" class="small-btn hidden">공지 수정</button>
-          <button id="trashBtn" type="button" class="small-btn">휴지통</button>
       </div>
-    </div>
-  </section>
+    </section>
 
     <section id="noticeScreen" class="screen hidden">
       <div class="card wide">
@@ -2063,6 +2083,7 @@
     const authScreen = document.getElementById("authScreen");
     const pendingScreen = document.getElementById("pendingScreen");
     const homeScreen = document.getElementById("homeScreen");
+    const statusScreen = document.getElementById("statusScreen");
     const adminScreen = document.getElementById("adminScreen");
     const noticeScreen = document.getElementById("noticeScreen");
     const trashScreen = document.getElementById("trashScreen");
@@ -2080,11 +2101,13 @@
     const pendingEmail = document.getElementById("pendingEmail");
     const pendingLogoutBtn = document.getElementById("pendingLogoutBtn");
 
+    const statusBtn = document.getElementById("statusBtn");
     const sebaeBtn = document.getElementById("sebaeBtn");
     const fourthBtn = document.getElementById("fourthBtn");
     const miscBtn = document.getElementById("miscBtn");
     const combinedBtn = document.getElementById("combinedBtn");
     const backHomeBtn = document.getElementById("backHomeBtn");
+    const backStatusHomeBtn = document.getElementById("backStatusHomeBtn");
     const backCombinedHomeBtn = document.getElementById("backCombinedHomeBtn");
     const adminBtn = document.getElementById("adminBtn");
     const noticeAdminBtn = document.getElementById("noticeAdminBtn");
@@ -2132,6 +2155,9 @@
     const goalProgressPercent = document.getElementById("goalProgressPercent");
     const goalProgressFill = document.getElementById("goalProgressFill");
     const goalProgressMessage = document.getElementById("goalProgressMessage");
+    const homeGoalProgressPercent = document.getElementById("homeGoalProgressPercent");
+    const homeGoalProgressFill = document.getElementById("homeGoalProgressFill");
+    const homeGoalProgressMessage = document.getElementById("homeGoalProgressMessage");
     const usedPostcardsPaid = document.getElementById("usedPostcardsPaid");
     const usedPostcardsPlanned = document.getElementById("usedPostcardsPlanned");
     const usedCurrencyPaid = document.getElementById("usedCurrencyPaid");
@@ -2161,6 +2187,7 @@
   authScreen.classList.add("hidden");
   pendingScreen.classList.add("hidden");
   homeScreen.classList.add("hidden");
+  statusScreen.classList.add("hidden");
   adminScreen.classList.add("hidden");
   noticeScreen.classList.add("hidden");
   trashScreen.classList.add("hidden");
@@ -2170,6 +2197,7 @@
   if (screenName === "auth") authScreen.classList.remove("hidden");
   if (screenName === "pending") pendingScreen.classList.remove("hidden");
   if (screenName === "home") homeScreen.classList.remove("hidden");
+  if (screenName === "status") statusScreen.classList.remove("hidden");
   if (screenName === "admin") adminScreen.classList.remove("hidden");
   if (screenName === "notice") noticeScreen.classList.remove("hidden");
   if (screenName === "trash") trashScreen.classList.remove("hidden");
@@ -3251,6 +3279,9 @@
       if (goalProgressPercent) goalProgressPercent.textContent = progressText;
       if (goalProgressFill) goalProgressFill.style.width = `${progress}%`;
       if (goalProgressMessage) goalProgressMessage.textContent = getGoalProgressMessage(progressRaw, remaining, balance);
+      if (homeGoalProgressPercent) homeGoalProgressPercent.textContent = progressText;
+      if (homeGoalProgressFill) homeGoalProgressFill.style.width = `${progress}%`;
+      if (homeGoalProgressMessage) homeGoalProgressMessage.textContent = getGoalProgressMessage(progressRaw, remaining, balance);
     }
 
     function renderPostcardTotals({ receivedTarget, purchasedTarget, listTypes }) {
@@ -7286,6 +7317,14 @@
       renderUsedPostcardPanel();
     }
 
+    function openStatusScreen() {
+      if (!currentUser) return;
+      currentListType = null;
+      modalListType = null;
+      showScreen("status");
+      renderHomeProgressPanel();
+    }
+
     async function startHomeOverviewSubscriptions() {
       if (!currentUser) return;
 
@@ -7447,11 +7486,13 @@
   }
 });
 
+    statusBtn.addEventListener("click", openStatusScreen);
     sebaeBtn.addEventListener("click", () => openList("sebae"));
     fourthBtn.addEventListener("click", () => openList("fourth"));
     miscBtn.addEventListener("click", () => openList("misc"));
     combinedBtn.addEventListener("click", openCombinedScreen);
     backHomeBtn.addEventListener("click", goHome);
+    backStatusHomeBtn.addEventListener("click", goHome);
     backCombinedHomeBtn.addEventListener("click", goHome);
     adminBtn.addEventListener("click", openAdminScreen);
     noticeAdminBtn.addEventListener("click", openNoticeScreen);
