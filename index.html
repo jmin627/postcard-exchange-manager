@@ -1410,6 +1410,218 @@
       }
     }
 
+
+    /* ===== 사용자별 세배엽/4기엽 커스텀 가격 프리셋 ===== */
+    .custom-preset-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .custom-preset-choice {
+      min-height: 44px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: var(--soft);
+      color: var(--text);
+      font-weight: 800;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .custom-preset-choice input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+    }
+
+    .custom-preset-choice:has(input:checked) {
+      background: var(--primary-soft);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .custom-preset-choice.disabled {
+      opacity: 0.62;
+      cursor: not-allowed;
+    }
+
+    .custom-preset-delete-btn {
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      border-radius: 10px;
+      background: var(--danger-soft);
+      border: 1px solid #ffd0d0;
+      color: var(--danger);
+      font-size: 16px;
+      font-weight: 1000;
+      line-height: 1;
+    }
+
+    .custom-preset-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .custom-preset-actions button,
+    .preset-modal-actions button {
+      height: 36px;
+      padding: 0 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .custom-preset-add-btn,
+    .custom-preset-default-btn {
+      background: var(--primary-soft);
+      border: 1px solid var(--primary);
+      color: var(--primary);
+    }
+
+    .preset-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: rgba(10, 13, 25, 0.42);
+    }
+
+    .preset-modal {
+      width: min(760px, 100%);
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: #fff;
+      box-shadow: 0 22px 70px rgba(10, 13, 25, 0.22);
+    }
+
+    .preset-modal h2 {
+      margin: 0 0 10px;
+      font-size: 22px;
+    }
+
+    .preset-modal-preview {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+      background: #f8f9ff;
+      color: #34384a;
+      font-size: 14px;
+      font-weight: 900;
+      line-height: 1.5;
+    }
+
+    .preset-modal-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .preset-modal-row {
+      display: grid;
+      grid-template-columns: 1fr 100px;
+      gap: 8px;
+      align-items: center;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: #fff;
+    }
+
+    .preset-modal-row span {
+      color: #3f4355;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .preset-modal-row input {
+      height: 36px;
+      padding: 0 10px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 900;
+      text-align: right;
+    }
+
+    .preset-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .default-choice-group {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #f8f9ff;
+    }
+
+    .default-choice-group h3 {
+      margin: 0 0 10px;
+      color: #34384a;
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .default-choice-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .default-choice {
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      color: #3f4355;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .default-choice input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+    }
+
+    .default-choice:has(input:checked) {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+
+    @media (max-width: 720px) {
+      .custom-preset-list,
+      .preset-modal-grid,
+      .default-choice-list {
+        grid-template-columns: 1fr;
+      }
+    }
+
   </style>
 </head>
 
@@ -7383,6 +7595,671 @@
       });
     }
 
+
+    /* ===== v9 패치: 세배엽/4기엽 사용자별 커스텀 가격 프리셋 + 기본값 설정 ===== */
+    let standardCustomPricePresets = [];
+    let standardDefaultSelectionByList = { sebae: null, fourth: null };
+    let standardPresetControlsReady = false;
+
+    const STANDARD_PRESET_SETTING_ID = "standardPricePresets";
+    const STANDARD_PRICE_DISPLAY_ORDER = [
+      { code: "kkam", name: "깜엽", short: "깜", repeat: true },
+      { code: "ju", name: "주엽", short: "주", repeat: true },
+      { code: "ten", name: "10기", short: "10기", repeat: false },
+      { code: "gogwi", name: "고귀", short: "고귀", repeat: false },
+      { code: "bo", name: "보엽", short: "보", repeat: false },
+      { code: "plus3", name: "+3", short: "3엽", repeat: false }
+    ];
+
+    function getStandardPresetSettingsRef() {
+      if (!currentUser) throw new Error("로그인 상태가 아닙니다.");
+      return doc(db, "users", currentUser.uid, "settings", STANDARD_PRESET_SETTING_ID);
+    }
+
+    function clonePlain(value) {
+      return JSON.parse(JSON.stringify(value ?? null));
+    }
+
+    function getStandardListLabel(listType) {
+      return listType === "fourth" ? "4기엽" : "세배엽";
+    }
+
+    function getBuiltInStandardLabel(listType, mode = "default") {
+      if (listType === "fourth") return mode === "manualCustom" ? "4기엽(기타)" : "4기엽(깜깜주)";
+      return mode === "manualCustom" ? "세배엽(기타)" : "세배엽(깜주)";
+    }
+
+    function normalizeStandardCustomPresets(presets) {
+      if (!Array.isArray(presets)) return [];
+
+      return presets
+        .map((preset) => {
+          const listType = preset?.listType === "fourth" ? "fourth" : "sebae";
+          const groups = normalizePaidItemGroups(preset?.paidItemGroups || []);
+          if (groups.length === 0) return null;
+
+          return {
+            id: String(preset?.id || createId()),
+            listType,
+            label: preset?.label || formatStandardPricePresetLabel(listType, groups),
+            paidItemGroups: groups,
+            createdAt: preset?.createdAt || Date.now()
+          };
+        })
+        .filter(Boolean);
+    }
+
+    function getPresetDisplayPiece(group) {
+      const quantity = toPositiveInteger(group?.quantity || 0);
+      if (quantity <= 0) return "";
+
+      const code = String(group?.code || "");
+      const rule = STANDARD_PRICE_DISPLAY_ORDER.find((item) => item.code === code);
+
+      if (rule) {
+        return rule.repeat
+          ? rule.short.repeat(quantity)
+          : Array.from({ length: quantity }, () => rule.short).join("");
+      }
+
+      const fallback = normalizePostcardName(group?.summaryName || group?.name || group?.label || "기타");
+      return quantity > 1 ? `${fallback}${quantity}` : fallback;
+    }
+
+    function formatStandardPricePresetInside(groups) {
+      const normalizedGroups = normalizePaidItemGroups(groups || []);
+      const orderedPieces = [];
+      const usedIndexes = new Set();
+
+      STANDARD_PRICE_DISPLAY_ORDER.forEach((rule) => {
+        normalizedGroups.forEach((group, index) => {
+          if (usedIndexes.has(index)) return;
+          if (group.code !== rule.code) return;
+          orderedPieces.push(getPresetDisplayPiece(group));
+          usedIndexes.add(index);
+        });
+      });
+
+      normalizedGroups.forEach((group, index) => {
+        if (usedIndexes.has(index)) return;
+        orderedPieces.push(getPresetDisplayPiece(group));
+      });
+
+      return orderedPieces.join("") || "기타";
+    }
+
+    function formatStandardPricePresetLabel(listType, groups) {
+      return `${getStandardListLabel(listType)}(${formatStandardPricePresetInside(groups)})`;
+    }
+
+    function findStandardCustomPreset(presetId) {
+      return standardCustomPricePresets.find((preset) => preset.id === presetId) || null;
+    }
+
+    function getDefaultTargetKeyForList(listType) {
+      return listType === "fourth" ? "default:fourth" : "default:sebae";
+    }
+
+    function normalizeDefaultSelectionByList(value) {
+      const source = value && typeof value === "object" ? value : {};
+      return {
+        sebae: typeof source.sebae === "string" && source.sebae ? source.sebae : getDefaultTargetKeyForList("sebae"),
+        fourth: typeof source.fourth === "string" && source.fourth ? source.fourth : getDefaultTargetKeyForList("fourth")
+      };
+    }
+
+    async function loadStandardPricePresetSettings() {
+      if (!currentUser) return;
+
+      try {
+        const snapshot = await getDoc(getStandardPresetSettingsRef());
+        const data = snapshot.data() || {};
+        standardCustomPricePresets = normalizeStandardCustomPresets(data.customPresets || []);
+        standardDefaultSelectionByList = normalizeDefaultSelectionByList(data.defaultSelections || {});
+        sanitizeStandardDefaultSelections();
+        ensureStandardPresetControls();
+        renderStandardCustomPresetOptions();
+      } catch (error) {
+        console.error(error);
+        standardCustomPricePresets = [];
+        standardDefaultSelectionByList = { sebae: getDefaultTargetKeyForList("sebae"), fourth: getDefaultTargetKeyForList("fourth") };
+        ensureStandardPresetControls();
+        renderStandardCustomPresetOptions();
+      }
+    }
+
+    async function saveStandardPricePresetSettings() {
+      if (!currentUser) return;
+
+      sanitizeStandardDefaultSelections();
+
+      await setDoc(
+        getStandardPresetSettingsRef(),
+        {
+          customPresets: standardCustomPricePresets,
+          defaultSelections: standardDefaultSelectionByList,
+          updatedAt: serverTimestamp()
+        },
+        { merge: true }
+      );
+    }
+
+    function isValidStandardTargetKey(listType, key) {
+      if (key === `default:${listType}`) return true;
+      if (key === `manualCustom:${listType}`) return true;
+      if (String(key || "").startsWith("preset:")) {
+        const presetId = String(key).slice("preset:".length);
+        const preset = findStandardCustomPreset(presetId);
+        return Boolean(preset && preset.listType === listType);
+      }
+      return false;
+    }
+
+    function sanitizeStandardDefaultSelections() {
+      ["sebae", "fourth"].forEach((listType) => {
+        if (!isValidStandardTargetKey(listType, standardDefaultSelectionByList[listType])) {
+          standardDefaultSelectionByList[listType] = getDefaultTargetKeyForList(listType);
+        }
+      });
+    }
+
+    function ensureStandardPresetControls() {
+      if (standardPresetControlsReady) return;
+      if (!listTypeField) return;
+
+      const checkboxRow = listTypeField.querySelector(".checkbox-row");
+      if (!checkboxRow) return;
+
+      if (!document.getElementById("standardCustomPresetOptions")) {
+        const customList = document.createElement("div");
+        customList.id = "standardCustomPresetOptions";
+        customList.className = "custom-preset-list";
+        checkboxRow.insertAdjacentElement("afterend", customList);
+      }
+
+      if (!document.getElementById("standardPresetActions")) {
+        const actions = document.createElement("div");
+        actions.id = "standardPresetActions";
+        actions.className = "custom-preset-actions";
+        actions.innerHTML = `
+          <button id="addStandardCustomPresetBtn" type="button" class="custom-preset-add-btn">+ 추가하기</button>
+          <button id="setStandardDefaultPresetBtn" type="button" class="custom-preset-default-btn">기본값 설정</button>
+        `;
+        const hint = listTypeField.querySelector(".hint");
+        if (hint) hint.insertAdjacentElement("beforebegin", actions);
+        else listTypeField.appendChild(actions);
+      }
+
+      document.getElementById("addStandardCustomPresetBtn")?.addEventListener("click", openAddStandardCustomPresetModal);
+      document.getElementById("setStandardDefaultPresetBtn")?.addEventListener("click", openStandardDefaultPresetModal);
+
+      listTypeField.addEventListener("change", (event) => {
+        const input = event.target;
+        if (!(input instanceof HTMLInputElement)) return;
+        if (!input.classList.contains("postcard-option-check")) return;
+        handleStandardPostcardOptionChange(input);
+      });
+
+      standardPresetControlsReady = true;
+    }
+
+    function getAllStandardPostcardOptionInputs() {
+      return Array.from(document.querySelectorAll(".postcard-option-check"));
+    }
+
+    function handleStandardPostcardOptionChange(input) {
+      if (!input.checked) {
+        syncCustomPaidItemsVisibility();
+        return;
+      }
+
+      getAllStandardPostcardOptionInputs().forEach((otherInput) => {
+        if (otherInput === input) return;
+        if (editingId || otherInput.dataset.listType === input.dataset.listType) {
+          otherInput.checked = false;
+        }
+      });
+
+      syncCustomPaidItemsVisibility();
+    }
+
+    function renderStandardCustomPresetOptions() {
+      ensureStandardPresetControls();
+
+      const target = document.getElementById("standardCustomPresetOptions");
+      if (!target) return;
+
+      target.innerHTML = standardCustomPricePresets.map((preset) => `
+        <label class="custom-preset-choice" data-preset-id="${escapeHtml(preset.id)}">
+          <input
+            class="postcard-option-check custom-preset-input"
+            type="checkbox"
+            data-list-type="${escapeHtml(preset.listType)}"
+            data-price-mode="saved"
+            data-preset-id="${escapeHtml(preset.id)}"
+          />
+          <span>${escapeHtml(preset.label || formatStandardPricePresetLabel(preset.listType, preset.paidItemGroups))}</span>
+          <button type="button" class="custom-preset-delete-btn" data-preset-id="${escapeHtml(preset.id)}" aria-label="커스텀 가격 삭제">×</button>
+        </label>
+      `).join("");
+
+      target.querySelectorAll(".custom-preset-delete-btn").forEach((button) => {
+        button.addEventListener("click", async (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+
+          const presetId = button.dataset.presetId;
+          const preset = findStandardCustomPreset(presetId);
+          if (!preset) return;
+
+          const ok = confirm(`${preset.label || formatStandardPricePresetLabel(preset.listType, preset.paidItemGroups)} 를 삭제하시겠습니까?`);
+          if (!ok) return;
+
+          try {
+            standardCustomPricePresets = standardCustomPricePresets.filter((item) => item.id !== presetId);
+            sanitizeStandardDefaultSelections();
+            await saveStandardPricePresetSettings();
+            renderStandardCustomPresetOptions();
+            showToast("커스텀 가격 항목을 삭제했습니다. 이미 추가된 명단은 유지됩니다.");
+          } catch (error) {
+            console.error(error);
+            showToast("커스텀 가격 삭제에 실패했습니다.");
+          }
+        });
+      });
+    }
+
+    function getSelectedPostcardTargetFromInput(input) {
+      const listType = input.dataset.listType;
+      const priceMode = input.dataset.priceMode || "default";
+
+      if (!listType) return null;
+
+      if (priceMode === "saved") {
+        const preset = findStandardCustomPreset(input.dataset.presetId);
+        if (!preset) return null;
+        return {
+          listType: preset.listType,
+          paidItemMode: "custom",
+          customPresetId: preset.id,
+          customPresetLabel: preset.label,
+          paidItemGroups: clonePlain(preset.paidItemGroups || [])
+        };
+      }
+
+      return {
+        listType,
+        paidItemMode: priceMode === "custom" ? "custom" : "default"
+      };
+    }
+
+    getSelectedPostcardTargets = function () {
+      return getAllStandardPostcardOptionInputs()
+        .filter((input) => input.checked)
+        .map(getSelectedPostcardTargetFromInput)
+        .filter(Boolean);
+    };
+
+    getSelectedListTypes = function () {
+      return getSelectedPostcardTargets().map((target) => target.listType);
+    };
+
+    setSelectedListTypes = function (targets) {
+      ensureStandardPresetControls();
+
+      const normalizedTargets = (targets || []).map((target) => {
+        if (typeof target === "string") {
+          return { listType: target, paidItemMode: "default" };
+        }
+
+        return {
+          listType: target?.listType,
+          paidItemMode: target?.paidItemMode || target?.priceMode || "default",
+          customPresetId: target?.customPresetId || target?.presetId || ""
+        };
+      });
+
+      getAllStandardPostcardOptionInputs().forEach((input) => {
+        input.checked = normalizedTargets.some((target) => {
+          if (!target.listType || target.listType !== input.dataset.listType) return false;
+
+          if (input.dataset.priceMode === "saved") {
+            return Boolean(target.customPresetId && target.customPresetId === input.dataset.presetId);
+          }
+
+          if (target.customPresetId) return false;
+
+          const wantedMode = target.paidItemMode === "custom" ? "custom" : "default";
+          return input.dataset.priceMode === wantedMode;
+        });
+      });
+
+      syncCustomPaidItemsVisibility();
+    };
+
+    setListTypeFieldDisabled = function (disabled) {
+      getAllStandardPostcardOptionInputs().forEach((input) => {
+        input.disabled = disabled;
+      });
+
+      document.querySelectorAll(".choice-check, .custom-preset-choice").forEach((label) => {
+        label.classList.toggle("disabled", disabled);
+      });
+
+      document.querySelectorAll("#standardPresetActions button, .custom-preset-delete-btn").forEach((button) => {
+        button.disabled = disabled;
+      });
+    };
+
+    syncCustomPaidItemsVisibility = function () {
+      const hasManualCustom = getAllStandardPostcardOptionInputs().some((input) =>
+        input.checked && input.dataset.priceMode === "custom"
+      );
+
+      if (customPaidItemsField) customPaidItemsField.classList.toggle("hidden", !hasManualCustom);
+
+      if (hasManualCustom && customEtcRows && customEtcRows.children.length === 0) {
+        addCustomEtcRow();
+      }
+    };
+
+    function targetFromStandardDefaultKey(listType, key) {
+      if (key === `manualCustom:${listType}`) {
+        return { listType, paidItemMode: "custom" };
+      }
+
+      if (String(key || "").startsWith("preset:")) {
+        const preset = findStandardCustomPreset(String(key).slice("preset:".length));
+        if (preset && preset.listType === listType) {
+          return {
+            listType,
+            paidItemMode: "custom",
+            customPresetId: preset.id,
+            customPresetLabel: preset.label,
+            paidItemGroups: clonePlain(preset.paidItemGroups || [])
+          };
+        }
+      }
+
+      return { listType, paidItemMode: "default" };
+    }
+
+    getDefaultTargetForModal = function (listType) {
+      const normalizedListType = listType === "fourth" ? "fourth" : "sebae";
+      sanitizeStandardDefaultSelections();
+      return targetFromStandardDefaultKey(normalizedListType, standardDefaultSelectionByList[normalizedListType]);
+    };
+
+    const buildStandardPaidItemDataForTargetBeforeV9 = buildStandardPaidItemDataForTarget;
+    buildStandardPaidItemDataForTarget = function (target) {
+      if (target?.customPresetId || Array.isArray(target?.paidItemGroups)) {
+        const groups = normalizePaidItemGroups(target.paidItemGroups || []);
+        if (groups.length === 0) throw new Error("CUSTOM_PAID_ITEMS_EMPTY");
+
+        return {
+          paidItemMode: "custom",
+          paidItemGroups: groups,
+          customPresetId: target.customPresetId || "",
+          customPresetLabel: target.customPresetLabel || formatStandardPricePresetLabel(target.listType, groups)
+        };
+      }
+
+      return buildStandardPaidItemDataForTargetBeforeV9(target);
+    };
+
+    const openModalBeforeV9StandardPresetPatch = openModal;
+    openModal = function (item = null, listType = currentListType) {
+      ensureStandardPresetControls();
+      renderStandardCustomPresetOptions();
+      const result = openModalBeforeV9StandardPresetPatch(item, listType);
+
+      const targetListType = listType || currentListType;
+      if (targetListType !== "misc" && item?.customPresetId) {
+        const preset = findStandardCustomPreset(item.customPresetId);
+        if (preset) {
+          setSelectedListTypes([{ listType: preset.listType, paidItemMode: "custom", customPresetId: preset.id }]);
+          syncCustomPaidItemsVisibility();
+        }
+      }
+
+      return result;
+    };
+
+    function getStandardPresetGroupsFromModal() {
+      const groups = [];
+
+      STANDARD_PRICE_DISPLAY_ORDER.forEach((rule) => {
+        const input = document.querySelector(`#standardPresetQty_${rule.code}`);
+        const quantity = toPositiveInteger(input?.value || 0);
+        if (quantity <= 0) return;
+
+        const preset = CUSTOM_PAID_PRESETS.find((item) => item.code === rule.code) || {
+          code: rule.code,
+          name: rule.name,
+          label: rule.short,
+          summaryName: rule.name
+        };
+
+        const group = makePaidItemGroup({
+          name: preset.summaryName || preset.name,
+          quantity,
+          type: "preset",
+          code: preset.code,
+          label: preset.label || rule.short,
+          summaryName: preset.summaryName || preset.name
+        });
+
+        if (group) groups.push(group);
+      });
+
+      return groups;
+    }
+
+    function getSelectedStandardPresetListTypeFromModal() {
+      const active = document.querySelector(".standard-preset-list-type-btn.active");
+      return active?.dataset.listType === "fourth" ? "fourth" : "sebae";
+    }
+
+    function updateStandardPresetPreview() {
+      const preview = document.getElementById("standardPresetPreview");
+      if (!preview) return;
+
+      const listType = getSelectedStandardPresetListTypeFromModal();
+      const groups = getStandardPresetGroupsFromModal();
+      preview.textContent = groups.length > 0
+        ? formatStandardPricePresetLabel(listType, groups)
+        : `${getStandardListLabel(listType)}(가격을 입력해주세요)`;
+    }
+
+    function closeStandardPresetModal() {
+      document.getElementById("standardPresetModalBackdrop")?.remove();
+    }
+
+    function openAddStandardCustomPresetModal() {
+      if (!currentUser) {
+        showToast("로그인 후 사용할 수 있습니다.");
+        return;
+      }
+
+      closeStandardPresetModal();
+      const defaultListType = currentListType === "fourth" ? "fourth" : "sebae";
+      const backdrop = document.createElement("div");
+      backdrop.id = "standardPresetModalBackdrop";
+      backdrop.className = "preset-modal-backdrop";
+      backdrop.innerHTML = `
+        <div class="preset-modal" role="dialog" aria-modal="true">
+          <h2>커스텀 가격 추가</h2>
+          <p class="hint">세배엽 또는 4기엽을 고른 뒤 가격 구성을 입력하세요. 저장하면 명단추가의 엽서종류 아래에 새 항목이 추가됩니다.</p>
+
+          <div class="field">
+            <label>목록 선택</label>
+            <div class="segmented">
+              <button type="button" class="seg-btn standard-preset-list-type-btn ${defaultListType === "sebae" ? "active" : ""}" data-list-type="sebae">세배엽</button>
+              <button type="button" class="seg-btn standard-preset-list-type-btn ${defaultListType === "fourth" ? "active" : ""}" data-list-type="fourth">4기엽</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>가격 구성</label>
+            <div class="preset-modal-grid">
+              ${STANDARD_PRICE_DISPLAY_ORDER.map((rule) => `
+                <label class="preset-modal-row">
+                  <span>${escapeHtml(rule.name)}</span>
+                  <input id="standardPresetQty_${escapeHtml(rule.code)}" type="number" min="0" step="1" placeholder="수량" />
+                </label>
+              `).join("")}
+            </div>
+          </div>
+
+          <div id="standardPresetPreview" class="preset-modal-preview"></div>
+
+          <div class="preset-modal-actions">
+            <button id="cancelStandardPresetBtn" type="button" class="cancel-btn">취소</button>
+            <button id="saveStandardPresetBtn" type="button">추가</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(backdrop);
+      updateStandardPresetPreview();
+
+      backdrop.addEventListener("click", (event) => {
+        if (event.target === backdrop) closeStandardPresetModal();
+      });
+
+      backdrop.querySelectorAll(".standard-preset-list-type-btn").forEach((button) => {
+        button.addEventListener("click", () => {
+          backdrop.querySelectorAll(".standard-preset-list-type-btn").forEach((target) => {
+            target.classList.toggle("active", target === button);
+          });
+          updateStandardPresetPreview();
+        });
+      });
+
+      backdrop.querySelectorAll("input").forEach((input) => {
+        input.addEventListener("input", updateStandardPresetPreview);
+      });
+
+      document.getElementById("cancelStandardPresetBtn")?.addEventListener("click", closeStandardPresetModal);
+      document.getElementById("saveStandardPresetBtn")?.addEventListener("click", async () => {
+        const listType = getSelectedStandardPresetListTypeFromModal();
+        const groups = getStandardPresetGroupsFromModal();
+
+        if (groups.length === 0) {
+          showToast("가격 구성을 하나 이상 입력해주세요.");
+          return;
+        }
+
+        const label = formatStandardPricePresetLabel(listType, groups);
+
+        try {
+          const preset = {
+            id: createId(),
+            listType,
+            label,
+            paidItemGroups: groups,
+            createdAt: Date.now()
+          };
+
+          standardCustomPricePresets = [...standardCustomPricePresets, preset];
+          await saveStandardPricePresetSettings();
+          renderStandardCustomPresetOptions();
+          setSelectedListTypes([{ listType, paidItemMode: "custom", customPresetId: preset.id }]);
+          closeStandardPresetModal();
+          showToast(`${label} 항목을 추가했습니다.`);
+        } catch (error) {
+          console.error(error);
+          showToast("커스텀 가격 추가에 실패했습니다.");
+        }
+      });
+    }
+
+    function buildDefaultChoiceOptions(listType) {
+      const options = [
+        { key: `default:${listType}`, label: getBuiltInStandardLabel(listType, "default") },
+        { key: `manualCustom:${listType}`, label: getBuiltInStandardLabel(listType, "manualCustom") },
+        ...standardCustomPricePresets
+          .filter((preset) => preset.listType === listType)
+          .map((preset) => ({ key: `preset:${preset.id}`, label: preset.label || formatStandardPricePresetLabel(preset.listType, preset.paidItemGroups) }))
+      ];
+
+      return options;
+    }
+
+    function closeStandardDefaultModal() {
+      document.getElementById("standardDefaultModalBackdrop")?.remove();
+    }
+
+    function openStandardDefaultPresetModal() {
+      if (!currentUser) {
+        showToast("로그인 후 사용할 수 있습니다.");
+        return;
+      }
+
+      closeStandardDefaultModal();
+      sanitizeStandardDefaultSelections();
+
+      const backdrop = document.createElement("div");
+      backdrop.id = "standardDefaultModalBackdrop";
+      backdrop.className = "preset-modal-backdrop";
+      backdrop.innerHTML = `
+        <div class="preset-modal" role="dialog" aria-modal="true">
+          <h2>기본값 설정</h2>
+          <p class="hint">명단추가 창을 처음 열었을 때 자동으로 체크될 엽서종류를 목록별로 선택합니다.</p>
+
+          ${["sebae", "fourth"].map((listType) => `
+            <div class="default-choice-group">
+              <h3>${getStandardListLabel(listType)} 목록 기본값</h3>
+              <div class="default-choice-list">
+                ${buildDefaultChoiceOptions(listType).map((option) => `
+                  <label class="default-choice">
+                    <input
+                      type="radio"
+                      name="default_${listType}"
+                      value="${escapeHtml(option.key)}"
+                      ${standardDefaultSelectionByList[listType] === option.key ? "checked" : ""}
+                    />
+                    <span>${escapeHtml(option.label)}</span>
+                  </label>
+                `).join("")}
+              </div>
+            </div>
+          `).join("")}
+
+          <div class="preset-modal-actions">
+            <button id="cancelStandardDefaultBtn" type="button" class="cancel-btn">취소</button>
+            <button id="saveStandardDefaultBtn" type="button">확인</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(backdrop);
+
+      backdrop.addEventListener("click", (event) => {
+        if (event.target === backdrop) closeStandardDefaultModal();
+      });
+
+      document.getElementById("cancelStandardDefaultBtn")?.addEventListener("click", closeStandardDefaultModal);
+      document.getElementById("saveStandardDefaultBtn")?.addEventListener("click", async () => {
+        try {
+          ["sebae", "fourth"].forEach((listType) => {
+            const checked = backdrop.querySelector(`input[name="default_${listType}"]:checked`);
+            standardDefaultSelectionByList[listType] = checked?.value || getDefaultTargetKeyForList(listType);
+          });
+
+          await saveStandardPricePresetSettings();
+          closeStandardDefaultModal();
+          showToast("기본값을 저장했습니다.");
+        } catch (error) {
+          console.error(error);
+          showToast("기본값 저장에 실패했습니다.");
+        }
+      });
+    }
+
+    ensureStandardPresetControls();
+
+
     loadNoticeSettings();
 
     signupBtn.addEventListener("click", async () => {
@@ -7442,6 +8319,9 @@
     modalListType = null;
     entries = [];
     entriesByList = { sebae: [], fourth: [], misc: [] };
+    standardCustomPricePresets = [];
+    standardDefaultSelectionByList = { sebae: getDefaultTargetKeyForList("sebae"), fourth: getDefaultTargetKeyForList("fourth") };
+    renderStandardCustomPresetOptions();
     targetReputation = 0;
     currentMailboxCapacity = 0;
     if (targetReputationInput) targetReputationInput.value = "";
@@ -7471,6 +8351,7 @@
     noticeAdminBtn.classList.add("hidden");
   }
 
+  await loadStandardPricePresetSettings();
   await loadTargetReputation();
   showScreen("home");
   await startHomeOverviewSubscriptions();
