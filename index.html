@@ -723,6 +723,22 @@
       line-height: 1.55;
     }
 
+
+    .admin-note-highlight {
+      display: inline;
+      padding: 1px 5px;
+      border-radius: 7px;
+      background: var(--highlight);
+      color: #34384a;
+      font-weight: 900;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
+
+    .note-part + .note-part {
+      margin-left: 4px;
+    }
+
     @media (max-width: 720px) {
       .app {
         width: min(100% - 18px, 1100px);
@@ -3605,10 +3621,21 @@
       return 0;
     }
 
+    function getCreatedOrder(item) {
+      const value = Number(item?.createdOrder ?? item?.inputOrder ?? 0);
+      return Number.isFinite(value) ? value : 0;
+    }
+
     function getBaseCompareBySortMode(a, b) {
       if (sortMode === "newest") {
         const createdCompare = getCreatedAtMs(a) - getCreatedAtMs(b);
         if (createdCompare !== 0) return createdCompare;
+
+        const orderCompare = getCreatedOrder(a) - getCreatedOrder(b);
+        if (orderCompare !== 0) {
+          return sortDirection === "desc" ? -orderCompare : orderCompare;
+        }
+
         return compareNickname(a, b);
       }
 
@@ -3628,6 +3655,21 @@
     }
 
     function compareBySortMode(a, b) {
+      if (sortMode === "newest") {
+        const createdCompare = getCreatedAtMs(a) - getCreatedAtMs(b);
+        if (createdCompare !== 0) {
+          return sortDirection === "desc" ? -createdCompare : createdCompare;
+        }
+
+        const orderCompare = getCreatedOrder(a) - getCreatedOrder(b);
+        if (orderCompare !== 0) {
+          return sortDirection === "desc" ? -orderCompare : orderCompare;
+        }
+
+        const nicknameCompare = compareNickname(a, b);
+        return sortDirection === "desc" ? -nicknameCompare : nicknameCompare;
+      }
+
       const result = getBaseCompareBySortMode(a, b);
       return sortDirection === "desc" ? -result : result;
     }
@@ -3741,7 +3783,7 @@
             <td class="col-edit">
               <button type="button" class="edit-btn">수정</button>
             </td>
-            <td class="col-note strike-cell">${highlightText(getNote(item), query)}</td>
+            <td class="col-note strike-cell">${renderNoteCell(item, query)}</td>
           `;
 
           row.querySelector(".done-check").addEventListener("change", async (event) => {
@@ -6310,7 +6352,7 @@
             <td class="col-price">${item.category === "판매" ? renderPaymentCell(item, "misc") : ""}</td>
             <td class="col-status">${renderStatusCell(item)}</td>
             <td class="col-edit"><button type="button" class="edit-btn">수정</button></td>
-            <td class="col-note strike-cell">${highlightText(getNote(item), query)}</td>
+            <td class="col-note strike-cell">${renderNoteCell(item, query)}</td>
           `;
 
           row.querySelector(".done-check").addEventListener("change", async (event) => {
@@ -6643,8 +6685,9 @@
         const sourceEntries = shouldSaveAsShared ? await loadSharedEntriesForList("misc") : await loadEntriesForList("misc");
         let nextEntries = [...sourceEntries];
         let addedOrMerged = 0;
+        const batchCreatedAt = Date.now();
 
-        nicknameList.forEach((nickname) => {
+        nicknameList.forEach((nickname, createdOrder) => {
           const normalized = normalizeNicknameForCompare(nickname);
           const existingIndex = nextEntries.findIndex((entry) => normalizeNicknameForCompare(entry.nickname) === normalized && entry.deleted !== true);
           const baseEntry = {
@@ -6662,7 +6705,8 @@
             paid: false,
             paidMarks: {},
             paidCounts: {},
-            createdAt: Date.now(),
+            createdAt: batchCreatedAt,
+            createdOrder,
             createdBy: currentUser.uid,
             createdByEmail: currentUser.email,
             shared: shouldSaveAsShared
@@ -7474,6 +7518,7 @@
           const duplicateCheckEntries = await loadDuplicateCheckEntriesForList(listType);
           const paidItemData = buildStandardPaidItemDataForTarget(target);
 
+          const batchCreatedAt = Date.now();
           const newEntries = nicknameList
             .filter((nickname, index, array) => {
               const normalizedNickname = normalizeNicknameForCompare(nickname);
@@ -7481,7 +7526,7 @@
               if (firstIndex !== index) return false;
               return !duplicateCheckEntries.some((entry) => normalizeNicknameForCompare(entry.nickname) === normalizedNickname);
             })
-            .map((nickname) => {
+            .map((nickname, createdOrder) => {
               const entry = {
                 id: createId(),
                 nickname,
@@ -7495,7 +7540,8 @@
                 paid: false,
                 paidMarks: {},
                 risingTe: false,
-                createdAt: Date.now(),
+                createdAt: batchCreatedAt,
+                createdOrder,
                 createdBy: currentUser?.uid || "",
                 createdByEmail: currentUser?.email || "",
                 shared: saveAsShared
@@ -8269,6 +8315,215 @@
     ensureStandardPresetControls();
 
 
+    /* ===== v11 패치: 공통 항목 관리자 메모 하이라이트 + 사용자별 개인 메모 ===== */
+    function getBaseNoteText(item) {
+      return String(item?.note || item?.memo || item?.remark || "").trim();
+    }
+
+    function normalizeMemoText(value) {
+      return String(value || "").trim().replace(/\s+/g, " ");
+    }
+
+    function getSharedAdminNote(item) {
+      if (item?.__source !== "shared") return "";
+      return normalizeMemoText(item.__adminNote ?? item.note ?? item.memo ?? item.remark ?? "");
+    }
+
+    function getSharedCustomNote(item) {
+      if (item?.__source !== "shared") return "";
+      return normalizeMemoText(item.customNote ?? item.__customNote ?? "");
+    }
+
+    function shouldShowSharedAdminNote(item) {
+      const adminNote = getSharedAdminNote(item);
+      if (!adminNote) return false;
+      return normalizeMemoText(item.hiddenAdminNote ?? item.__hiddenAdminNote ?? "") !== adminNote;
+    }
+
+    function getDisplayNoteParts(item) {
+      if (item?.__source !== "shared") {
+        const personalNote = normalizeMemoText(getBaseNoteText(item));
+        return personalNote ? [{ type: "personal", text: personalNote }] : [];
+      }
+
+      const parts = [];
+      const adminNote = getSharedAdminNote(item);
+      const customNote = getSharedCustomNote(item);
+
+      if (shouldShowSharedAdminNote(item)) {
+        parts.push({ type: "admin", text: adminNote });
+      }
+
+      if (customNote) {
+        parts.push({ type: "personal", text: customNote });
+      }
+
+      return parts;
+    }
+
+    getNote = function (item) {
+      return getDisplayNoteParts(item).map((part) => part.text).join(" ").trim();
+    };
+
+    function renderNoteCell(item, query = "") {
+      const parts = getDisplayNoteParts(item);
+      if (parts.length === 0) return "";
+
+      return parts.map((part) => {
+        const content = highlightText(part.text, query || "");
+        if (part.type === "admin") {
+          return `<span class="note-part admin-note-highlight">${content}</span>`;
+        }
+        return `<span class="note-part">${content}</span>`;
+      }).join(" ");
+    }
+
+    getVisibleSharedEntries = function (listType) {
+      const states = sharedStatesByList[listType] || {};
+
+      return (sharedEntriesByList[listType] || [])
+        .filter((entry) => entry.deleted !== true)
+        .map((entry) => {
+          const state = states[entry.id] || {};
+
+          if (state.hidden === true) return null;
+
+          return {
+            ...entry,
+            paymentType: "길드지급",
+            done: Boolean(state.done),
+            paidMarks: state.paidMarks || {},
+            paidCounts: state.paidCounts || entry.paidCounts || {},
+            risingTe: Boolean(state.risingTe),
+            status: state.status || entry.status || "미지급",
+            customNote: typeof state.customNote === "string" ? state.customNote : "",
+            hiddenAdminNote: typeof state.hiddenAdminNote === "string" ? state.hiddenAdminNote : "",
+            noteUpdatedAt: state.noteUpdatedAt || null,
+            paid: false,
+            __source: "shared",
+            __adminNote: getBaseNoteText(entry)
+          };
+        })
+        .filter(Boolean);
+    };
+
+    function findCurrentSharedEditingItem() {
+      const targetListType = modalListType || currentListType;
+      if (!targetListType || !editingId) return null;
+
+      return (entriesByList[targetListType] || []).find((item) => item.id === editingId && item.__source === "shared")
+        || (sharedEntriesByList[targetListType] || []).find((item) => item.id === editingId)
+        || null;
+    }
+
+    function buildSharedPersonalNotePatch(item, visibleNoteValue) {
+      const adminNote = getSharedAdminNote(item) || normalizeMemoText(getBaseNoteText(item));
+      const raw = normalizeMemoText(visibleNoteValue);
+
+      if (!adminNote) {
+        return {
+          customNote: raw,
+          hiddenAdminNote: "",
+          noteUpdatedAt: Date.now()
+        };
+      }
+
+      if (!raw) {
+        return {
+          customNote: "",
+          hiddenAdminNote: adminNote,
+          noteUpdatedAt: Date.now()
+        };
+      }
+
+      if (raw === adminNote) {
+        return {
+          customNote: "",
+          hiddenAdminNote: "",
+          noteUpdatedAt: Date.now()
+        };
+      }
+
+      if (raw.startsWith(`${adminNote} `)) {
+        return {
+          customNote: raw.slice(adminNote.length).trim(),
+          hiddenAdminNote: "",
+          noteUpdatedAt: Date.now()
+        };
+      }
+
+      return {
+        customNote: raw,
+        hiddenAdminNote: adminNote,
+        noteUpdatedAt: Date.now()
+      };
+    }
+
+    async function saveSharedPersonalNoteOnly() {
+      const targetListType = modalListType || currentListType;
+      if (!targetListType || !editingId) {
+        showToast("수정할 공통 항목을 찾지 못했습니다.");
+        return;
+      }
+
+      const currentItem = findCurrentSharedEditingItem();
+      if (!currentItem) {
+        showToast("수정할 공통 항목을 찾지 못했습니다.");
+        return;
+      }
+
+      try {
+        await updateSharedItemState(targetListType, editingId, buildSharedPersonalNotePatch(currentItem, noteInput.value));
+        closeModal();
+        showToast("개인 메모를 저장했습니다.");
+      } catch (error) {
+        console.error(error);
+        showToast("개인 메모 저장에 실패했습니다.");
+      }
+    }
+
+    const openModalBeforeSharedNotePatch = openModal;
+    openModal = function (item = null, listType = currentListType) {
+      const result = openModalBeforeSharedNotePatch(item, listType);
+      const targetListType = listType || currentListType;
+      const isSharedItem = Boolean(item?.__source === "shared" || (editingId && editingSource === "shared"));
+      const managerCanEditCommonMisc = targetListType === "misc" && canManageSharedStaff();
+
+      if (isSharedItem && managerCanEditCommonMisc) {
+        noteInput.value = getSharedAdminNote(item) || getBaseNoteText(item);
+      }
+
+      if (isSharedItem && !managerCanEditCommonMisc) {
+        modalTitle.textContent = "공통 항목 개인 메모 수정";
+        saveEntryBtn.classList.remove("hidden");
+        noteInput.disabled = false;
+        nicknameInput.disabled = true;
+        dateInput.disabled = true;
+        setListTypeFieldDisabled(true);
+        setCustomPaidItemInputsDisabled(true);
+        if (typeof setMiscComposerDisabled === "function") setMiscComposerDisabled(true);
+
+        document.querySelectorAll(".seg-btn[data-category], .payment-btn").forEach((button) => {
+          button.disabled = true;
+        });
+      }
+
+      return result;
+    };
+
+    const saveEntryBeforeSharedNotePatch = saveEntry;
+    saveEntry = async function () {
+      const targetListType = modalListType || currentListType;
+      const managerCanEditCommonMisc = targetListType === "misc" && canManageSharedStaff();
+
+      if (editingSource === "shared" && !managerCanEditCommonMisc) {
+        return saveSharedPersonalNoteOnly();
+      }
+
+      return saveEntryBeforeSharedNotePatch();
+    };
+
+
     loadNoticeSettings();
 
     signupBtn.addEventListener("click", async () => {
@@ -8437,7 +8692,7 @@
           sortDirection = sortDirection === "asc" ? "desc" : "asc";
         } else {
           sortMode = nextSortMode;
-          sortDirection = "asc";
+          sortDirection = nextSortMode === "newest" ? "desc" : "asc";
         }
 
         updateSortButtons();
