@@ -173,7 +173,7 @@
 
     .toolbar {
       display: grid;
-      grid-template-columns: 1fr auto auto auto;
+      grid-template-columns: 1fr auto auto auto auto;
       gap: 10px;
       margin-bottom: 18px;
     }
@@ -1647,6 +1647,85 @@
       }
     }
 
+
+    /* ===== 대용량 목록 페이지네이션 / 검색 이동 패치 ===== */
+    .pagination-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 10px 0 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #f8f9ff;
+      color: #3f4355;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .pagination-left,
+    .pagination-right,
+    .search-jump-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .page-size-select {
+      width: auto;
+      min-width: 90px;
+      height: 34px;
+      padding: 0 8px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--text);
+      font-weight: 900;
+      outline: none;
+    }
+
+    .page-nav-btn,
+    .search-jump-btn {
+      height: 34px;
+      min-width: 38px;
+      padding: 0 10px;
+      border-radius: 10px;
+      background: #fff;
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .page-nav-btn:disabled,
+    .search-jump-btn:disabled {
+      opacity: 0.42;
+      cursor: not-allowed;
+    }
+
+    .search-jump-count {
+      min-width: 48px;
+      text-align: center;
+      color: var(--primary);
+      font-weight: 900;
+    }
+
+    @media (max-width: 720px) {
+      .pagination-toolbar {
+        align-items: stretch;
+      }
+
+      .pagination-left,
+      .pagination-right,
+      .search-jump-box {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+
   </style>
 </head>
 
@@ -1943,7 +2022,8 @@
         </div>
 
         <div class="toolbar">
-          <input id="combinedSearchInput" type="text" placeholder="전체 목록에서 검색어 입력" />
+          <input id="combinedSearchInput" type="text" placeholder="전체 목록에서 검색어 입력 후 Enter 또는 검색" />
+          <button id="combinedSearchConfirmBtn" type="button">검색</button>
           <button id="combinedExportBtn" type="button">엑셀로 내보내기</button>
         </div>
 
@@ -2064,7 +2144,8 @@
         </div>
 
         <div class="toolbar">
-          <input id="searchInput" type="text" placeholder="검색어 입력" />
+          <input id="searchInput" type="text" placeholder="검색어 입력 후 Enter 또는 검색" />
+          <button id="searchConfirmBtn" type="button">검색</button>
           <button id="excelImportBtn" type="button">엑셀로 추가</button>
           <button id="listExportBtn" type="button">엑셀로 내보내기</button>
           <button id="addEntryBtn" type="button">명단 추가</button>
@@ -2366,6 +2447,8 @@
     const emptyState = document.getElementById("emptyState");
     const listProgress = document.getElementById("listProgress");
     const combinedSearchInput = document.getElementById("combinedSearchInput");
+    const searchConfirmBtn = document.getElementById("searchConfirmBtn");
+    const combinedSearchConfirmBtn = document.getElementById("combinedSearchConfirmBtn");
     const combinedExportBtn = document.getElementById("combinedExportBtn");
     const combinedSebaeBody = document.getElementById("combinedSebaeBody");
     const combinedFourthBody = document.getElementById("combinedFourthBody");
@@ -2822,6 +2905,7 @@
       sharedEntriesByList[listType] = [];
       sharedStatesByList[listType] = {};
       searchInput.value = "";
+      activeListSearchQuery = "";
 
       listTitle.textContent = listMeta[listType].title;
       updateSortButtons();
@@ -2890,6 +2974,7 @@
       currentListType = null;
       modalListType = null;
       combinedSearchInput.value = "";
+      activeCombinedSearchQuery = "";
       entriesByList = { sebae: [], fourth: [], misc: [] };
       personalEntriesByList = { sebae: [], fourth: [], misc: [] };
       sharedEntriesByList = { sebae: [], fourth: [], misc: [] };
@@ -6517,12 +6602,12 @@
         tableBodyTarget: tableBody,
         emptyTarget: emptyState,
         progressTarget: listProgress,
-        query: searchInput.value.trim()
+        query: activeListSearchQuery
       });
     }
 
     renderCombinedEntries = function () {
-      const query = combinedSearchInput.value.trim();
+      const query = activeCombinedSearchQuery;
       renderPostcardTotals({
         receivedTarget: combinedReceivedTotal,
         purchasedTarget: combinedPurchasedTotal,
@@ -8658,6 +8743,198 @@
       }
     });
 
+
+    /* ===== 대용량 목록 페이지네이션 / 검색 이동 패치 ===== */
+    let activeListSearchQuery = "";
+    let activeCombinedSearchQuery = "";
+
+    const PAGING_SIZE_OPTIONS = [50, 100, 200, "all"];
+    const pagingStateByKey = {};
+
+    function getPagingKey(listType, tableBodyTarget) {
+      return `${tableBodyTarget?.id || "table"}:${listType || "unknown"}`;
+    }
+
+    function getDefaultPageSize() {
+      return 100;
+    }
+
+    function getPagingState(key, query = "") {
+      if (!pagingStateByKey[key]) {
+        pagingStateByKey[key] = {
+          pageSize: getDefaultPageSize(),
+          currentPage: 0,
+          query: "",
+          searchIndex: 0
+        };
+      }
+
+      const state = pagingStateByKey[key];
+      if (state.query !== query) {
+        state.query = query;
+        state.currentPage = 0;
+        state.searchIndex = 0;
+      }
+
+      return state;
+    }
+
+    function findTableWrapFromBody(tableBodyTarget) {
+      return tableBodyTarget?.closest(".table-wrap") || null;
+    }
+
+    function ensurePaginationToolbar({ key, listType, tableBodyTarget }) {
+      const tableWrap = findTableWrapFromBody(tableBodyTarget);
+      if (!tableWrap) return null;
+
+      let toolbar = tableWrap.previousElementSibling;
+      if (!toolbar || toolbar.dataset?.pagingKey !== key) {
+        toolbar = document.createElement("div");
+        toolbar.className = "pagination-toolbar";
+        toolbar.dataset.pagingKey = key;
+        toolbar.dataset.listType = listType || "";
+        tableWrap.parentNode.insertBefore(toolbar, tableWrap);
+      }
+
+      return toolbar;
+    }
+
+    function formatPageSizeLabel(size) {
+      return size === "all" ? "전체" : `${size}개`;
+    }
+
+    function getRenderRefreshFunctionForTarget(tableBodyTarget) {
+      const id = tableBodyTarget?.id || "";
+      if (id.startsWith("combined")) return renderCombinedEntries;
+      return renderEntries;
+    }
+
+    function updatePaginationToolbar({ key, listType, tableBodyTarget, totalCount, totalPages, state, startIndex, endIndex, matchCount }) {
+      const toolbar = ensurePaginationToolbar({ key, listType, tableBodyTarget });
+      if (!toolbar) return;
+
+      const currentPageNumber = totalPages <= 0 ? 0 : state.currentPage + 1;
+      const rangeText = totalCount <= 0
+        ? "표시할 항목 없음"
+        : `${(startIndex + 1).toLocaleString("ko-KR")}-${endIndex.toLocaleString("ko-KR")} / ${totalCount.toLocaleString("ko-KR")}명`;
+      const searchText = state.query
+        ? `검색 결과 ${matchCount.toLocaleString("ko-KR")}명`
+        : "검색 전";
+
+      toolbar.innerHTML = `
+        <div class="pagination-left">
+          <span>표시 개수</span>
+          <select class="page-size-select" aria-label="페이지당 표시 개수">
+            ${PAGING_SIZE_OPTIONS.map((size) => `
+              <option value="${size}" ${String(state.pageSize) === String(size) ? "selected" : ""}>${formatPageSizeLabel(size)}</option>
+            `).join("")}
+          </select>
+          <span class="page-range-text">${rangeText}</span>
+        </div>
+        <div class="pagination-right">
+          <button type="button" class="page-nav-btn" data-page-action="prev" ${state.currentPage <= 0 || totalPages <= 1 ? "disabled" : ""}>이전</button>
+          <span>${currentPageNumber}/${totalPages || 0}쪽</span>
+          <button type="button" class="page-nav-btn" data-page-action="next" ${state.currentPage >= totalPages - 1 || totalPages <= 1 ? "disabled" : ""}>다음</button>
+          <span class="search-jump-box">
+            <span class="search-jump-count">${searchText}</span>
+          </span>
+        </div>
+      `;
+
+      const refresh = getRenderRefreshFunctionForTarget(tableBodyTarget);
+
+      toolbar.querySelector(".page-size-select")?.addEventListener("change", (event) => {
+        const value = event.target.value;
+        state.pageSize = value === "all" ? "all" : Number(value);
+        state.currentPage = 0;
+        state.searchIndex = 0;
+        refresh();
+      });
+
+      toolbar.querySelectorAll(".page-nav-btn").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (button.dataset.pageAction === "prev") {
+            state.currentPage = Math.max(0, state.currentPage - 1);
+          } else {
+            state.currentPage = Math.min(Math.max(totalPages - 1, 0), state.currentPage + 1);
+          }
+          refresh();
+        });
+      });
+
+      toolbar.querySelectorAll(".search-jump-btn").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (!state.query || matchCount <= 0) return;
+
+          if (button.dataset.searchAction === "prev") {
+            state.searchIndex = (state.searchIndex - 1 + matchCount) % matchCount;
+          } else {
+            state.searchIndex = (state.searchIndex + 1) % matchCount;
+          }
+
+          refresh();
+        });
+      });
+    }
+
+    function getSortedVisibleEntriesForPaging(sourceEntries, listType) {
+      return sortEntries(applyViewFilters(sourceEntries, listType));
+    }
+
+    function renderPagedEntryRowsWithOriginal(originalRenderer, args) {
+      const { listType, sourceEntries, tableBodyTarget, query } = args;
+      const key = getPagingKey(listType, tableBodyTarget);
+      const state = getPagingState(key, query || "");
+      const sortedAllVisible = getSortedVisibleEntriesForPaging(sourceEntries, listType);
+      const sortedVisible = query
+        ? sortedAllVisible.filter((item) => rowMatchesQuery(item, query))
+        : sortedAllVisible;
+      const matchCount = query ? sortedVisible.length : 0;
+
+      state.searchIndex = 0;
+
+      const totalCount = sortedVisible.length;
+      const pageSize = state.pageSize === "all" ? Math.max(totalCount, 1) : Number(state.pageSize || getDefaultPageSize());
+      const totalPages = state.pageSize === "all" ? (totalCount > 0 ? 1 : 0) : Math.ceil(totalCount / pageSize);
+      state.currentPage = Math.max(0, Math.min(state.currentPage, Math.max(totalPages - 1, 0)));
+
+      const startIndex = state.pageSize === "all" ? 0 : state.currentPage * pageSize;
+      const endIndex = state.pageSize === "all" ? totalCount : Math.min(startIndex + pageSize, totalCount);
+      const pageEntries = sortedVisible.slice(startIndex, endIndex);
+
+      originalRenderer({
+        ...args,
+        sourceEntries: pageEntries
+      });
+
+      if (args.progressTarget) {
+        updateProgressSummary(args.progressTarget, listType, sortedVisible, sourceEntries);
+      }
+
+      updatePaginationToolbar({
+        key,
+        listType,
+        tableBodyTarget,
+        totalCount,
+        totalPages,
+        state,
+        startIndex,
+        endIndex,
+        matchCount
+      });
+    }
+
+    const originalRenderEntryRowsForPagingPatch = renderEntryRows;
+    const originalRenderMiscEntryRowsForPagingPatch = typeof renderMiscEntryRows === "function" ? renderMiscEntryRows : null;
+
+    renderEntryRows = function (args) {
+      if (args?.listType === "misc" && originalRenderMiscEntryRowsForPagingPatch) {
+        return renderPagedEntryRowsWithOriginal(originalRenderMiscEntryRowsForPagingPatch, args);
+      }
+
+      return renderPagedEntryRowsWithOriginal(originalRenderEntryRowsForPagingPatch, args);
+    };
+
     listExportBtn.addEventListener("click", exportCurrentListToExcel);
     combinedExportBtn.addEventListener("click", exportCombinedToExcel);
 
@@ -8676,12 +8953,80 @@
       excelFileInput.value = "";
     });
 
-    searchInput.addEventListener("input", () => {
+    function commitListSearch() {
+      activeListSearchQuery = searchInput.value.trim();
+      const key = getPagingKey(currentListType, tableBody);
+      if (pagingStateByKey[key]) {
+        pagingStateByKey[key].currentPage = 0;
+        pagingStateByKey[key].searchIndex = 0;
+        pagingStateByKey[key].query = activeListSearchQuery;
+      }
       renderEntries();
+    }
+
+    function commitCombinedSearch() {
+      activeCombinedSearchQuery = combinedSearchInput.value.trim();
+      [
+        ["sebae", combinedSebaeBody],
+        ["fourth", combinedFourthBody],
+        ["misc", combinedMiscBody]
+      ].forEach(([listType, body]) => {
+        const key = getPagingKey(listType, body);
+        if (pagingStateByKey[key]) {
+          pagingStateByKey[key].currentPage = 0;
+          pagingStateByKey[key].searchIndex = 0;
+          pagingStateByKey[key].query = activeCombinedSearchQuery;
+        }
+      });
+      renderCombinedEntries();
+    }
+
+    searchConfirmBtn?.addEventListener("click", commitListSearch);
+    combinedSearchConfirmBtn?.addEventListener("click", commitCombinedSearch);
+
+    function clearListSearchIfInputEmpty() {
+      if (searchInput.value.trim() !== "") return;
+      if (!activeListSearchQuery) return;
+
+      activeListSearchQuery = "";
+      const key = getPagingKey(currentListType, tableBody);
+      if (pagingStateByKey[key]) {
+        pagingStateByKey[key].currentPage = 0;
+        pagingStateByKey[key].searchIndex = 0;
+        pagingStateByKey[key].query = "";
+      }
+      renderEntries();
+    }
+
+    function clearCombinedSearchIfInputEmpty() {
+      if (combinedSearchInput.value.trim() !== "") return;
+      if (!activeCombinedSearchQuery) return;
+
+      activeCombinedSearchQuery = "";
+      [
+        ["sebae", combinedSebaeBody],
+        ["fourth", combinedFourthBody],
+        ["misc", combinedMiscBody]
+      ].forEach(([listType, body]) => {
+        const key = getPagingKey(listType, body);
+        if (pagingStateByKey[key]) {
+          pagingStateByKey[key].currentPage = 0;
+          pagingStateByKey[key].searchIndex = 0;
+          pagingStateByKey[key].query = "";
+        }
+      });
+      renderCombinedEntries();
+    }
+
+    searchInput.addEventListener("input", clearListSearchIfInputEmpty);
+    combinedSearchInput.addEventListener("input", clearCombinedSearchIfInputEmpty);
+
+    searchInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") commitListSearch();
     });
 
-    combinedSearchInput.addEventListener("input", () => {
-      renderCombinedEntries();
+    combinedSearchInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") commitCombinedSearch();
     });
 
     document.querySelectorAll(".sort-btn").forEach((button) => {
