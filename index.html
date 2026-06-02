@@ -1713,6 +1713,44 @@
       font-weight: 900;
     }
 
+
+    .search-inline-wrap {
+      position: relative;
+      min-width: 0;
+      width: 100%;
+    }
+
+    .search-inline-wrap input {
+      padding-right: 52px;
+    }
+
+    .search-inline-btn {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 36px;
+      min-width: 36px;
+      height: 34px;
+      padding: 0;
+      border-radius: 10px;
+      background: #f08c00;
+      border: 1px solid #e67700;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 1;
+      display: inline-grid;
+      place-items: center;
+    }
+
+    .search-inline-btn.clear-mode {
+      background: var(--danger-soft);
+      border-color: #ffd0d0;
+      color: var(--danger);
+      font-size: 18px;
+    }
+
     @media (max-width: 720px) {
       .pagination-toolbar {
         align-items: stretch;
@@ -2022,8 +2060,10 @@
         </div>
 
         <div class="toolbar">
-          <input id="combinedSearchInput" type="text" placeholder="전체 목록에서 검색어 입력 후 Enter 또는 검색" />
-          <button id="combinedSearchConfirmBtn" type="button">검색</button>
+          <div class="search-inline-wrap">
+            <input id="combinedSearchInput" type="text" placeholder="전체 목록에서 검색어 입력 후 Enter 또는 돋보기" />
+            <button id="combinedSearchConfirmBtn" class="search-inline-btn" type="button" title="검색" aria-label="검색">⌕</button>
+          </div>
           <button id="combinedExportBtn" type="button">엑셀로 내보내기</button>
         </div>
 
@@ -2144,8 +2184,10 @@
         </div>
 
         <div class="toolbar">
-          <input id="searchInput" type="text" placeholder="검색어 입력 후 Enter 또는 검색" />
-          <button id="searchConfirmBtn" type="button">검색</button>
+          <div class="search-inline-wrap">
+            <input id="searchInput" type="text" placeholder="검색어 입력 후 Enter 또는 돋보기" />
+            <button id="searchConfirmBtn" class="search-inline-btn" type="button" title="검색" aria-label="검색">⌕</button>
+          </div>
           <button id="excelImportBtn" type="button">엑셀로 추가</button>
           <button id="listExportBtn" type="button">엑셀로 내보내기</button>
           <button id="addEntryBtn" type="button">명단 추가</button>
@@ -8981,8 +9023,79 @@
       renderCombinedEntries();
     }
 
-    searchConfirmBtn?.addEventListener("click", commitListSearch);
-    combinedSearchConfirmBtn?.addEventListener("click", commitCombinedSearch);
+    function updateInlineSearchButtons() {
+      const listInputValue = searchInput?.value.trim() || "";
+      const combinedInputValue = combinedSearchInput?.value.trim() || "";
+
+      const listClearMode = Boolean(activeListSearchQuery) && listInputValue === activeListSearchQuery;
+      const combinedClearMode = Boolean(activeCombinedSearchQuery) && combinedInputValue === activeCombinedSearchQuery;
+
+      if (searchConfirmBtn) {
+        searchConfirmBtn.textContent = listClearMode ? "×" : "⌕";
+        searchConfirmBtn.classList.toggle("clear-mode", listClearMode);
+        searchConfirmBtn.title = listClearMode ? "검색해제" : "검색";
+        searchConfirmBtn.setAttribute("aria-label", listClearMode ? "검색해제" : "검색");
+      }
+
+      if (combinedSearchConfirmBtn) {
+        combinedSearchConfirmBtn.textContent = combinedClearMode ? "×" : "⌕";
+        combinedSearchConfirmBtn.classList.toggle("clear-mode", combinedClearMode);
+        combinedSearchConfirmBtn.title = combinedClearMode ? "검색해제" : "검색";
+        combinedSearchConfirmBtn.setAttribute("aria-label", combinedClearMode ? "검색해제" : "검색");
+      }
+    }
+
+    function clearCommittedListSearch() {
+      if (searchInput) searchInput.value = "";
+      activeListSearchQuery = "";
+      const key = getPagingKey(currentListType, tableBody);
+      if (pagingStateByKey[key]) {
+        pagingStateByKey[key].currentPage = 0;
+        pagingStateByKey[key].searchIndex = 0;
+        pagingStateByKey[key].query = "";
+      }
+      renderEntries();
+      updateInlineSearchButtons();
+    }
+
+    function clearCommittedCombinedSearch() {
+      if (combinedSearchInput) combinedSearchInput.value = "";
+      activeCombinedSearchQuery = "";
+      [
+        ["sebae", combinedSebaeBody],
+        ["fourth", combinedFourthBody],
+        ["misc", combinedMiscBody]
+      ].forEach(([listType, body]) => {
+        const key = getPagingKey(listType, body);
+        if (pagingStateByKey[key]) {
+          pagingStateByKey[key].currentPage = 0;
+          pagingStateByKey[key].searchIndex = 0;
+          pagingStateByKey[key].query = "";
+        }
+      });
+      renderCombinedEntries();
+      updateInlineSearchButtons();
+    }
+
+    searchConfirmBtn?.addEventListener("click", () => {
+      const value = searchInput.value.trim();
+      if (activeListSearchQuery && value === activeListSearchQuery) {
+        clearCommittedListSearch();
+        return;
+      }
+      commitListSearch();
+      updateInlineSearchButtons();
+    });
+
+    combinedSearchConfirmBtn?.addEventListener("click", () => {
+      const value = combinedSearchInput.value.trim();
+      if (activeCombinedSearchQuery && value === activeCombinedSearchQuery) {
+        clearCommittedCombinedSearch();
+        return;
+      }
+      commitCombinedSearch();
+      updateInlineSearchButtons();
+    });
 
     function clearListSearchIfInputEmpty() {
       if (searchInput.value.trim() !== "") return;
@@ -8996,6 +9109,7 @@
         pagingStateByKey[key].query = "";
       }
       renderEntries();
+      updateInlineSearchButtons();
     }
 
     function clearCombinedSearchIfInputEmpty() {
@@ -9016,18 +9130,33 @@
         }
       });
       renderCombinedEntries();
+      updateInlineSearchButtons();
     }
 
-    searchInput.addEventListener("input", clearListSearchIfInputEmpty);
-    combinedSearchInput.addEventListener("input", clearCombinedSearchIfInputEmpty);
+    searchInput.addEventListener("input", () => {
+      clearListSearchIfInputEmpty();
+      updateInlineSearchButtons();
+    });
+    combinedSearchInput.addEventListener("input", () => {
+      clearCombinedSearchIfInputEmpty();
+      updateInlineSearchButtons();
+    });
 
     searchInput.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") commitListSearch();
+      if (event.key === "Enter") {
+        commitListSearch();
+        updateInlineSearchButtons();
+      }
     });
 
     combinedSearchInput.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") commitCombinedSearch();
+      if (event.key === "Enter") {
+        commitCombinedSearch();
+        updateInlineSearchButtons();
+      }
     });
+
+    updateInlineSearchButtons();
 
     document.querySelectorAll(".sort-btn").forEach((button) => {
       button.addEventListener("click", () => {
