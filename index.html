@@ -1764,6 +1764,165 @@
       }
     }
 
+
+    .donor-home-btn {
+      background: linear-gradient(180deg, #fff3f3, #ffd6d6);
+      border-color: #ff9c9c;
+      color: #9f1d1d;
+      box-shadow: 0 10px 24px rgba(224, 82, 82, 0.18);
+    }
+
+    .donor-home-btn:hover {
+      opacity: 1;
+      filter: brightness(0.98);
+    }
+
+    .donor-toolbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .donor-table {
+      min-width: 900px;
+    }
+
+    .donor-table .col-done { width: 80px; }
+    .donor-table .col-name { width: 220px; }
+    .donor-table .col-postcard-kind { width: 240px; }
+    .donor-table .col-edit { width: 110px; }
+    .donor-table .col-note { width: 320px; }
+
+    .donor-type-badge {
+      display: inline-flex;
+      min-width: 74px;
+      height: 30px;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10px;
+      border: 1px solid #ffc2c2;
+      border-radius: 999px;
+      background: #fff4f4;
+      color: #9f1d1d;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .donor-closed-row {
+      background: #fff1f1 !important;
+      color: #a82222;
+      box-shadow: inset 5px 0 0 #e05252;
+    }
+
+    .donor-closed-row .strike-cell,
+    .donor-closed-row .donor-type-badge {
+      text-decoration: line-through;
+      color: #a82222;
+    }
+
+    .donor-closed-badge {
+      display: inline-flex;
+      margin-left: 6px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #ffdada;
+      color: #a82222;
+      font-size: 11px;
+      font-weight: 900;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    .donor-modal-actions {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin-top: 22px;
+    }
+
+    .donor-modal-left,
+    .donor-modal-right {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .donor-modal-right {
+      justify-content: flex-end;
+    }
+
+    .donor-delete-mine-btn {
+      background: var(--danger-soft);
+      border: 1px solid #ffd0d0;
+      color: var(--danger);
+    }
+
+    .donor-delete-all-btn {
+      background: #bd2424;
+      border: 1px solid #bd2424;
+      color: #fff;
+    }
+
+    .donor-save-mine-btn {
+      background: #fff7e6;
+      border: 1px solid #ffd18a;
+      color: #a15b00;
+    }
+
+    .donor-save-all-btn {
+      background: #e05252;
+      border: 1px solid #e05252;
+      color: #fff;
+    }
+
+    .donor-choice-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .donor-choice-btn {
+      height: 44px;
+      border-radius: 13px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-weight: 900;
+    }
+
+    .donor-choice-btn.active {
+      background: #fff1f1;
+      border-color: #e05252;
+      color: #c73131;
+    }
+
+    .donor-close-choice .seg-btn.active[data-donor-closed="closed"] {
+      background: #fff1f1;
+      border-color: #e05252;
+      color: #c73131;
+    }
+
+    @media (max-width: 720px) {
+      .donor-toolbar,
+      .donor-modal-actions {
+        grid-template-columns: 1fr;
+      }
+
+      .donor-modal-left,
+      .donor-modal-right {
+        justify-content: stretch;
+      }
+
+      .donor-modal-left button,
+      .donor-modal-right button {
+        flex: 1;
+      }
+    }
+
+
   </style>
 </head>
 
@@ -1849,6 +2008,7 @@
         </div>
 
         <div class="big-buttons home-buttons">
+          <button id="donorBtn" type="button" class="big-btn donor-home-btn">기온 기부자 명단</button>
           <button id="statusBtn" type="button" class="big-btn">진행 현황 및 재화</button>
           <button id="sebaeBtn" type="button" class="big-btn">세배엽 목록</button>
           <button id="fourthBtn" type="button" class="big-btn">4기엽 목록</button>
@@ -1863,6 +2023,44 @@
       </div>
     </div>
   </section>
+
+
+    <section id="donorScreen" class="screen hidden">
+      <div class="card wide">
+        <div class="top">
+          <div>
+            <h1>기온 기부자 명단</h1>
+            <p>누구든 추가할 수 있는 공통 기부자 명단입니다. 완료 체크와 나에게만 적용한 수정은 내 계정에만 반영됩니다.</p>
+          </div>
+          <button id="backDonorHomeBtn" type="button" class="small-btn">처음으로</button>
+        </div>
+
+        <div class="donor-toolbar">
+          <div class="progress-summary compact" id="donorProgressSummary">목록을 불러오는 중입니다...</div>
+          <button id="addDonorBtn" type="button">명단 추가</button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="donor-table">
+            <thead>
+              <tr>
+                <th class="col-done">완료</th>
+                <th class="col-name">닉네임</th>
+                <th class="col-postcard-kind">엽서종류</th>
+                <th class="col-edit">수정</th>
+                <th class="col-note">비고</th>
+              </tr>
+            </thead>
+            <tbody id="donorTableBody"></tbody>
+          </table>
+        </div>
+
+        <div id="donorEmpty" class="empty hidden">
+          아직 추가된 기온 기부자 명단이 없습니다.<br />
+          위의 <b>명단 추가</b> 버튼을 눌러 시작하세요.
+        </div>
+      </div>
+    </section>
 
 
     <section id="statusScreen" class="screen hidden">
@@ -2380,6 +2578,56 @@
     </div>
   </div>
 
+  <div id="donorModalBackdrop" class="modal-backdrop hidden">
+    <div class="modal">
+      <h2 id="donorModalTitle">기온 기부자 명단 추가</h2>
+
+      <div class="field">
+        <label for="donorNicknameInput">닉네임</label>
+        <input id="donorNicknameInput" type="text" placeholder="닉네임 입력, 여러 명은 쉼표(,)로 구분" autocomplete="off" />
+      </div>
+
+      <div class="field">
+        <label>엽서종류</label>
+        <div id="donorPostcardTypeButtons" class="donor-choice-grid">
+          <button type="button" class="donor-choice-btn active" data-donor-type="세배엽">세배엽</button>
+          <button type="button" class="donor-choice-btn" data-donor-type="4기엽">4기엽</button>
+          <button type="button" class="donor-choice-btn" data-donor-type="깜엽">깜엽</button>
+          <button type="button" class="donor-choice-btn" data-donor-type="주엽">주엽</button>
+          <button type="button" class="donor-choice-btn" data-donor-type="고귀엽">고귀엽</button>
+          <button type="button" class="donor-choice-btn" data-donor-type="10기엽">10기엽</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="donorNoteInput">비고</label>
+        <input id="donorNoteInput" type="text" placeholder="비고 입력" autocomplete="off" />
+      </div>
+
+      <div class="field" id="donorClosedField">
+        <label>마감여부</label>
+        <div class="segmented donor-close-choice">
+          <button type="button" class="seg-btn active" data-donor-closed="open">진행중</button>
+          <button type="button" class="seg-btn" data-donor-closed="closed">마감</button>
+        </div>
+        <p class="hint">마감은 모두에게 적용됩니다. 마감된 항목은 빨간색과 가로줄로 표시되고 가장 아래로 내려갑니다.</p>
+      </div>
+
+      <div class="donor-modal-actions">
+        <div class="donor-modal-left">
+          <button id="donorDeleteMineBtn" type="button" class="donor-delete-mine-btn hidden">나에게서 삭제</button>
+          <button id="donorDeleteAllBtn" type="button" class="donor-delete-all-btn hidden">모두에게 삭제</button>
+        </div>
+        <div class="donor-modal-right">
+          <button id="donorCancelBtn" type="button" class="cancel-btn">취소</button>
+          <button id="donorSaveMineBtn" type="button" class="donor-save-mine-btn hidden">내게만 적용</button>
+          <button id="donorSaveAllBtn" type="button" class="donor-save-all-btn">모두에게 적용</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
   <div id="toast" class="toast hidden"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -2447,6 +2695,7 @@
     const adminScreen = document.getElementById("adminScreen");
     const noticeScreen = document.getElementById("noticeScreen");
     const trashScreen = document.getElementById("trashScreen");
+    const donorScreen = document.getElementById("donorScreen");
     const combinedScreen = document.getElementById("combinedScreen");
     const listScreen = document.getElementById("listScreen");
 
@@ -2462,11 +2711,13 @@
     const pendingLogoutBtn = document.getElementById("pendingLogoutBtn");
 
     const statusBtn = document.getElementById("statusBtn");
+    const donorBtn = document.getElementById("donorBtn");
     const sebaeBtn = document.getElementById("sebaeBtn");
     const fourthBtn = document.getElementById("fourthBtn");
     const miscBtn = document.getElementById("miscBtn");
     const combinedBtn = document.getElementById("combinedBtn");
     const backHomeBtn = document.getElementById("backHomeBtn");
+    const backDonorHomeBtn = document.getElementById("backDonorHomeBtn");
     const backStatusHomeBtn = document.getElementById("backStatusHomeBtn");
     const backCombinedHomeBtn = document.getElementById("backCombinedHomeBtn");
     const adminBtn = document.getElementById("adminBtn");
@@ -2478,6 +2729,20 @@
     const adminUserStatusTableBody = document.getElementById("adminUserStatusTableBody");
     const adminPendingTableBody = document.getElementById("adminPendingTableBody");
     const trashTableBody = document.getElementById("trashTableBody");
+    const donorTableBody = document.getElementById("donorTableBody");
+    const donorEmpty = document.getElementById("donorEmpty");
+    const donorProgressSummary = document.getElementById("donorProgressSummary");
+    const addDonorBtn = document.getElementById("addDonorBtn");
+    const donorModalBackdrop = document.getElementById("donorModalBackdrop");
+    const donorModalTitle = document.getElementById("donorModalTitle");
+    const donorNicknameInput = document.getElementById("donorNicknameInput");
+    const donorNoteInput = document.getElementById("donorNoteInput");
+    const donorClosedField = document.getElementById("donorClosedField");
+    const donorDeleteMineBtn = document.getElementById("donorDeleteMineBtn");
+    const donorDeleteAllBtn = document.getElementById("donorDeleteAllBtn");
+    const donorCancelBtn = document.getElementById("donorCancelBtn");
+    const donorSaveMineBtn = document.getElementById("donorSaveMineBtn");
+    const donorSaveAllBtn = document.getElementById("donorSaveAllBtn");
 
     const listTitle = document.getElementById("listTitle");
     const searchInput = document.getElementById("searchInput");
@@ -2553,6 +2818,7 @@
   adminScreen.classList.add("hidden");
   noticeScreen.classList.add("hidden");
   trashScreen.classList.add("hidden");
+  donorScreen.classList.add("hidden");
   combinedScreen.classList.add("hidden");
   listScreen.classList.add("hidden");
 
@@ -2563,6 +2829,7 @@
   if (screenName === "admin") adminScreen.classList.remove("hidden");
   if (screenName === "notice") noticeScreen.classList.remove("hidden");
   if (screenName === "trash") trashScreen.classList.remove("hidden");
+  if (screenName === "donor") donorScreen.classList.remove("hidden");
   if (screenName === "combined") combinedScreen.classList.remove("hidden");
   if (screenName === "list") listScreen.classList.remove("hidden");
 }
@@ -3088,6 +3355,7 @@
 
       clearSingleSubscription();
       clearCombinedSubscriptions();
+      if (typeof clearDonorSubscriptions === "function") clearDonorSubscriptions();
 
       showScreen("home");
     }
@@ -8651,6 +8919,458 @@
     };
 
 
+    /* ===== 기온 기부자 명단 공용 탭 ===== */
+    const DONOR_LIST_TYPE = "kionDonors";
+    const DONOR_TYPES = ["세배엽", "4기엽", "깜엽", "주엽", "고귀엽", "10기엽"];
+    let donorEntries = [];
+    let donorStates = {};
+    let donorUnsubscribes = [];
+    let donorEditingId = null;
+    let selectedDonorType = "세배엽";
+    let selectedDonorClosed = false;
+
+    function getDonorSharedRef() {
+      return doc(db, "sharedLists", DONOR_LIST_TYPE);
+    }
+
+    function getDonorStateRef() {
+      if (!currentUser) throw new Error("로그인 상태가 아닙니다.");
+      return doc(db, "users", currentUser.uid, "sharedStates", DONOR_LIST_TYPE);
+    }
+
+    async function ensureDonorDocumentsExist() {
+      const donorSnapshot = await getDoc(getDonorSharedRef());
+      if (!donorSnapshot.exists()) {
+        await setDoc(getDonorSharedRef(), {
+          entries: [],
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      }
+
+      const stateSnapshot = await getDoc(getDonorStateRef());
+      if (!stateSnapshot.exists()) {
+        await setDoc(getDonorStateRef(), {
+          states: {},
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      }
+    }
+
+    function clearDonorSubscriptions() {
+      donorUnsubscribes.forEach((unsubscribe) => unsubscribe());
+      donorUnsubscribes = [];
+    }
+
+    function getDonorState(entryId) {
+      return donorStates?.[entryId] && typeof donorStates[entryId] === "object"
+        ? donorStates[entryId]
+        : {};
+    }
+
+    function getDonorDisplayItem(entry) {
+      const state = getDonorState(entry.id);
+      const override = state.override && typeof state.override === "object" ? state.override : {};
+
+      return {
+        ...entry,
+        nickname: typeof override.nickname === "string" ? override.nickname : (entry.nickname || ""),
+        postcardType: typeof override.postcardType === "string" ? override.postcardType : (entry.postcardType || "세배엽"),
+        note: typeof override.note === "string" ? override.note : (entry.note || ""),
+        done: Boolean(state.done),
+        hidden: Boolean(state.hidden),
+        closed: Boolean(entry.closed),
+        __baseNickname: entry.nickname || "",
+        __basePostcardType: entry.postcardType || "세배엽",
+        __baseNote: entry.note || "",
+        __source: "donor"
+      };
+    }
+
+    function getVisibleDonorEntries() {
+      return (donorEntries || [])
+        .filter((entry) => entry && entry.deleted !== true)
+        .map(getDonorDisplayItem)
+        .filter((entry) => entry.hidden !== true);
+    }
+
+    function getDonorCreatedAtMs(item) {
+      return getCreatedAtMs(item);
+    }
+
+    function sortDonorEntries(source) {
+      return [...source].sort((a, b) => {
+        if (a.closed !== b.closed) return a.closed ? 1 : -1;
+        if (a.done !== b.done) return a.done ? 1 : -1;
+        const createdCompare = getDonorCreatedAtMs(b) - getDonorCreatedAtMs(a);
+        if (createdCompare !== 0) return createdCompare;
+        const orderA = Number.isFinite(Number(a.createdOrder)) ? Number(a.createdOrder) : 0;
+        const orderB = Number.isFinite(Number(b.createdOrder)) ? Number(b.createdOrder) : 0;
+        if (orderA !== orderB) return orderB - orderA;
+        return String(a.nickname || "").localeCompare(String(b.nickname || ""), "ko-KR", { numeric: true, sensitivity: "base" });
+      });
+    }
+
+    function renderDonorEntries() {
+      if (!donorTableBody || !donorEmpty) return;
+
+      const visible = sortDonorEntries(getVisibleDonorEntries());
+      const activeCount = visible.filter((item) => !item.closed).length;
+      const closedCount = visible.filter((item) => item.closed).length;
+      const doneCount = visible.filter((item) => item.done).length;
+
+      if (donorProgressSummary) {
+        donorProgressSummary.textContent = `전체 ${visible.length.toLocaleString("ko-KR")}명 · 완료 ${doneCount.toLocaleString("ko-KR")}명 · 진행중 ${activeCount.toLocaleString("ko-KR")}명 · 마감 ${closedCount.toLocaleString("ko-KR")}명`;
+      }
+
+      donorTableBody.innerHTML = "";
+      donorEmpty.classList.toggle("hidden", visible.length !== 0);
+      if (visible.length === 0) return;
+
+      visible.forEach((item) => {
+        const row = document.createElement("tr");
+        row.className = [
+          item.closed ? "donor-closed-row" : "",
+          item.done ? "done-row" : ""
+        ].join(" ");
+
+        row.innerHTML = `
+          <td class="col-done">
+            <input class="check donor-done-check" type="checkbox" ${item.done ? "checked" : ""} aria-label="완료 표시" ${item.closed ? "disabled" : ""} />
+          </td>
+          <td class="col-name strike-cell">
+            ${escapeHtml(item.nickname || "")}
+            ${item.closed ? '<span class="donor-closed-badge">마감</span>' : ""}
+          </td>
+          <td class="col-postcard-kind strike-cell"><span class="donor-type-badge">${escapeHtml(item.postcardType || "")}</span></td>
+          <td class="col-edit"><button type="button" class="edit-btn donor-edit-btn">수정</button></td>
+          <td class="col-note strike-cell">${escapeHtml(item.note || "")}</td>
+        `;
+
+        const doneCheck = row.querySelector(".donor-done-check");
+        if (doneCheck) {
+          doneCheck.addEventListener("change", async (event) => {
+            try {
+              await updateDonorState(item.id, { done: event.target.checked });
+            } catch (error) {
+              console.error(error);
+              showToast("완료 표시 저장에 실패했습니다.");
+            }
+          });
+        }
+
+        row.querySelector(".donor-edit-btn").addEventListener("click", () => openDonorModal(item));
+        donorTableBody.appendChild(row);
+      });
+    }
+
+    async function saveDonorEntries(nextEntries) {
+      donorEntries = nextEntries;
+      renderDonorEntries();
+      await setDoc(getDonorSharedRef(), {
+        entries: nextEntries,
+        updatedAt: serverTimestamp(),
+        updatedBy: currentUser?.uid || "",
+        updatedByEmail: currentUser?.email || ""
+      }, { merge: true });
+    }
+
+    async function updateDonorState(entryId, patch) {
+      const states = {
+        ...(donorStates || {})
+      };
+
+      states[entryId] = {
+        ...(states[entryId] || {}),
+        ...patch
+      };
+
+      donorStates = states;
+      renderDonorEntries();
+      await setDoc(getDonorStateRef(), {
+        states,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+    }
+
+    function setSelectedDonorType(type) {
+      selectedDonorType = DONOR_TYPES.includes(type) ? type : "세배엽";
+      document.querySelectorAll(".donor-choice-btn").forEach((button) => {
+        button.classList.toggle("active", button.dataset.donorType === selectedDonorType);
+      });
+    }
+
+    function setSelectedDonorClosed(closed) {
+      selectedDonorClosed = Boolean(closed);
+      document.querySelectorAll(".seg-btn[data-donor-closed]").forEach((button) => {
+        const active = selectedDonorClosed
+          ? button.dataset.donorClosed === "closed"
+          : button.dataset.donorClosed === "open";
+        button.classList.toggle("active", active);
+      });
+    }
+
+    function resetDonorModal() {
+      donorEditingId = null;
+      donorNicknameInput.value = "";
+      donorNoteInput.value = "";
+      setSelectedDonorType("세배엽");
+      setSelectedDonorClosed(false);
+      donorDeleteMineBtn.classList.add("hidden");
+      donorDeleteAllBtn.classList.add("hidden");
+      donorSaveMineBtn.classList.add("hidden");
+      donorSaveAllBtn.textContent = "저장";
+      if (donorClosedField) donorClosedField.classList.add("hidden");
+    }
+
+    function openDonorModal(item = null) {
+      resetDonorModal();
+      donorEditingId = item?.id || null;
+      donorModalTitle.textContent = donorEditingId ? "기온 기부자 명단 수정" : "기온 기부자 명단 추가";
+      donorNicknameInput.value = item?.nickname || "";
+      donorNoteInput.value = item?.note || "";
+      setSelectedDonorType(item?.postcardType || "세배엽");
+      setSelectedDonorClosed(Boolean(item?.closed));
+
+      if (donorEditingId) {
+        donorDeleteMineBtn.classList.remove("hidden");
+        donorDeleteAllBtn.classList.remove("hidden");
+        donorSaveMineBtn.classList.remove("hidden");
+        donorSaveAllBtn.textContent = "모두에게 적용";
+        if (donorClosedField) donorClosedField.classList.remove("hidden");
+      }
+
+      donorModalBackdrop.classList.remove("hidden");
+      setTimeout(() => donorNicknameInput.focus(), 0);
+    }
+
+    function closeDonorModal() {
+      donorModalBackdrop.classList.add("hidden");
+      resetDonorModal();
+    }
+
+    function getDonorNicknameList() {
+      return donorNicknameInput.value
+        .split(/[,，\n]/)
+        .map((name) => name.trim().replace(/\s+/g, " "))
+        .filter(Boolean);
+    }
+
+    function findDonorBaseEntry(entryId) {
+      return (donorEntries || []).find((entry) => entry.id === entryId) || null;
+    }
+
+    async function saveDonorForEveryone() {
+      if (!currentUser) return;
+
+      const nicknameList = getDonorNicknameList();
+      const note = donorNoteInput.value.trim();
+
+      if (nicknameList.length === 0) {
+        showToast("닉네임을 입력해주세요.");
+        donorNicknameInput.focus();
+        return;
+      }
+
+      try {
+        const currentEntries = [...(donorEntries || [])];
+
+        if (donorEditingId) {
+          const targetIndex = currentEntries.findIndex((entry) => entry.id === donorEditingId);
+          if (targetIndex === -1) {
+            showToast("수정할 명단을 찾지 못했습니다.");
+            return;
+          }
+
+          const original = currentEntries[targetIndex];
+          currentEntries[targetIndex] = {
+            ...original,
+            nickname: nicknameList[0],
+            postcardType: selectedDonorType,
+            note,
+            closed: selectedDonorClosed,
+            updatedAt: Date.now(),
+            updatedBy: currentUser.uid,
+            updatedByEmail: currentUser.email
+          };
+
+          await saveDonorEntries(currentEntries);
+          closeDonorModal();
+          showToast(selectedDonorClosed ? "모두에게 마감으로 적용했습니다." : "모두에게 적용했습니다.");
+          return;
+        }
+
+        const batchCreatedAt = Date.now();
+        const newEntries = nicknameList.map((nickname, createdOrder) => ({
+          id: createId(),
+          nickname,
+          postcardType: selectedDonorType,
+          note,
+          closed: false,
+          createdAt: batchCreatedAt,
+          createdOrder,
+          createdBy: currentUser.uid,
+          createdByEmail: currentUser.email,
+          updatedAt: batchCreatedAt,
+          updatedBy: currentUser.uid,
+          updatedByEmail: currentUser.email
+        }));
+
+        await saveDonorEntries([...currentEntries, ...newEntries]);
+        closeDonorModal();
+        showToast(`${newEntries.length.toLocaleString("ko-KR")}명을 추가했습니다.`);
+      } catch (error) {
+        console.error(error);
+        showToast("기온 기부자 명단 저장에 실패했습니다.");
+      }
+    }
+
+    async function saveDonorForMeOnly() {
+      if (!donorEditingId) return;
+
+      const nicknameList = getDonorNicknameList();
+      const note = donorNoteInput.value.trim();
+
+      if (nicknameList.length === 0) {
+        showToast("닉네임을 입력해주세요.");
+        donorNicknameInput.focus();
+        return;
+      }
+
+      try {
+        await updateDonorState(donorEditingId, {
+          override: {
+            nickname: nicknameList[0],
+            postcardType: selectedDonorType,
+            note
+          },
+          overrideUpdatedAt: Date.now()
+        });
+
+        if (selectedDonorClosed !== Boolean(findDonorBaseEntry(donorEditingId)?.closed)) {
+          showToast("내게만 적용했습니다. 마감여부는 모두에게 적용에서만 바뀝니다.");
+        } else {
+          showToast("내게만 적용했습니다.");
+        }
+
+        closeDonorModal();
+      } catch (error) {
+        console.error(error);
+        showToast("내 계정에 저장하지 못했습니다.");
+      }
+    }
+
+    async function deleteDonorForMeOnly() {
+      if (!donorEditingId) return;
+      const ok = confirm("이 명단을 내 계정에서만 삭제할까요?\n\n다른 유저에게는 그대로 보입니다.");
+      if (!ok) return;
+
+      try {
+        await updateDonorState(donorEditingId, {
+          hidden: true,
+          hiddenAt: Date.now()
+        });
+        closeDonorModal();
+        showToast("내 계정에서 숨겼습니다.");
+      } catch (error) {
+        console.error(error);
+        showToast("내 계정에서 삭제하지 못했습니다.");
+      }
+    }
+
+    async function deleteDonorForEveryone() {
+      if (!donorEditingId) return;
+      const item = findDonorBaseEntry(donorEditingId);
+      const nickname = item?.nickname || donorNicknameInput.value.trim() || "이 명단";
+      const ok = confirm(`${nickname} 을/를 모두에게서 삭제할까요?\n\n모든 유저 화면에서 사라집니다.`);
+      if (!ok) return;
+
+      try {
+        const nextEntries = (donorEntries || []).filter((entry) => entry.id !== donorEditingId);
+        await saveDonorEntries(nextEntries);
+        closeDonorModal();
+        showToast("모두에게서 삭제했습니다.");
+      } catch (error) {
+        console.error(error);
+        showToast("모두에게서 삭제하지 못했습니다.");
+      }
+    }
+
+    async function openDonorScreen() {
+      if (!currentUser) return;
+
+      clearSingleSubscription();
+      clearCombinedSubscriptions();
+      clearDonorSubscriptions();
+
+      showScreen("donor");
+      donorEntries = [];
+      donorStates = {};
+      if (donorProgressSummary) donorProgressSummary.textContent = "목록을 불러오는 중입니다...";
+      renderDonorEntries();
+
+      try {
+        await ensureDonorDocumentsExist();
+
+        donorUnsubscribes.push(onSnapshot(
+          getDonorSharedRef(),
+          (snapshot) => {
+            const data = snapshot.data();
+            donorEntries = Array.isArray(data?.entries) ? data.entries : [];
+            renderDonorEntries();
+          },
+          (error) => {
+            console.error(error);
+            showToast("기온 기부자 명단을 불러오지 못했습니다.");
+          }
+        ));
+
+        donorUnsubscribes.push(onSnapshot(
+          getDonorStateRef(),
+          (snapshot) => {
+            const data = snapshot.data();
+            donorStates = data?.states && typeof data.states === "object" ? data.states : {};
+            renderDonorEntries();
+          },
+          (error) => {
+            console.error(error);
+            showToast("기온 기부자 개인 상태를 불러오지 못했습니다.");
+          }
+        ));
+      } catch (error) {
+        console.error(error);
+        showToast("기온 기부자 명단을 준비하지 못했습니다.");
+      }
+    }
+
+    document.querySelectorAll(".donor-choice-btn").forEach((button) => {
+      button.addEventListener("click", () => setSelectedDonorType(button.dataset.donorType));
+    });
+
+    document.querySelectorAll(".seg-btn[data-donor-closed]").forEach((button) => {
+      button.addEventListener("click", () => setSelectedDonorClosed(button.dataset.donorClosed === "closed"));
+    });
+
+    if (addDonorBtn) addDonorBtn.addEventListener("click", () => openDonorModal());
+    if (donorCancelBtn) donorCancelBtn.addEventListener("click", closeDonorModal);
+    if (donorSaveAllBtn) donorSaveAllBtn.addEventListener("click", saveDonorForEveryone);
+    if (donorSaveMineBtn) donorSaveMineBtn.addEventListener("click", saveDonorForMeOnly);
+    if (donorDeleteMineBtn) donorDeleteMineBtn.addEventListener("click", deleteDonorForMeOnly);
+    if (donorDeleteAllBtn) donorDeleteAllBtn.addEventListener("click", deleteDonorForEveryone);
+    if (donorModalBackdrop) {
+      donorModalBackdrop.addEventListener("click", (event) => {
+        if (event.target === donorModalBackdrop) closeDonorModal();
+      });
+    }
+
+    donorNicknameInput?.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.isComposing) {
+        event.preventDefault();
+        if (donorEditingId) saveDonorForEveryone();
+        else saveDonorForEveryone();
+      }
+    });
+
+
     loadNoticeSettings();
 
     signupBtn.addEventListener("click", async () => {
@@ -8719,6 +9439,7 @@
     if (currentMailboxCapacityInput) currentMailboxCapacityInput.value = "";
     clearSingleSubscription();
     clearCombinedSubscriptions();
+    if (typeof clearDonorSubscriptions === "function") clearDonorSubscriptions();
     userEmail.textContent = "";
     if (pendingEmail) pendingEmail.textContent = "";
     adminBtn.classList.add("hidden");
@@ -8758,12 +9479,14 @@
   }
 });
 
+    donorBtn.addEventListener("click", openDonorScreen);
     statusBtn.addEventListener("click", openStatusScreen);
     sebaeBtn.addEventListener("click", () => openList("sebae"));
     fourthBtn.addEventListener("click", () => openList("fourth"));
     miscBtn.addEventListener("click", () => openList("misc"));
     combinedBtn.addEventListener("click", openCombinedScreen);
     backHomeBtn.addEventListener("click", goHome);
+    backDonorHomeBtn.addEventListener("click", goHome);
     backStatusHomeBtn.addEventListener("click", goHome);
     backCombinedHomeBtn.addEventListener("click", goHome);
     adminBtn.addEventListener("click", openAdminScreen);
