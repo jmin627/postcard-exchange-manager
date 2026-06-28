@@ -8926,7 +8926,7 @@
     let donorStates = {};
     let donorUnsubscribes = [];
     let donorEditingId = null;
-    let selectedDonorType = "세배엽";
+    let selectedDonorTypes = ["세배엽"];
     let selectedDonorClosed = false;
 
     function getDonorSharedRef() {
@@ -8967,6 +8967,40 @@
         : {};
     }
 
+    function normalizeDonorTypes(value) {
+      const source = Array.isArray(value)
+        ? value
+        : String(value || "")
+            .split(/[,.，/|\n]/)
+            .map((item) => item.trim())
+            .filter(Boolean);
+
+      const result = [];
+      source.forEach((type) => {
+        if (DONOR_TYPES.includes(type) && !result.includes(type)) {
+          result.push(type);
+        }
+      });
+
+      return result.length > 0 ? result : ["세배엽"];
+    }
+
+    function getDonorTypeText(value) {
+      return normalizeDonorTypes(value).join(", ");
+    }
+
+    function renderDonorTypeBadges(value) {
+      return normalizeDonorTypes(value)
+        .map((type) => `<span class="donor-type-badge">${escapeHtml(type)}</span>`)
+        .join(" ");
+    }
+
+    function donorTypesEqual(a, b) {
+      const first = normalizeDonorTypes(a);
+      const second = normalizeDonorTypes(b);
+      return first.length === second.length && first.every((type) => second.includes(type));
+    }
+
     function getDonorDisplayItem(entry) {
       const state = getDonorState(entry.id);
       const override = state.override && typeof state.override === "object" ? state.override : {};
@@ -8974,13 +9008,19 @@
       return {
         ...entry,
         nickname: typeof override.nickname === "string" ? override.nickname : (entry.nickname || ""),
-        postcardType: typeof override.postcardType === "string" ? override.postcardType : (entry.postcardType || "세배엽"),
+        postcardTypes: Array.isArray(override.postcardTypes)
+          ? normalizeDonorTypes(override.postcardTypes)
+          : normalizeDonorTypes(entry.postcardTypes || entry.postcardType || "세배엽"),
+        postcardType: getDonorTypeText(Array.isArray(override.postcardTypes)
+          ? override.postcardTypes
+          : (entry.postcardTypes || entry.postcardType || "세배엽")),
         note: typeof override.note === "string" ? override.note : (entry.note || ""),
         done: Boolean(state.done),
         hidden: Boolean(state.hidden),
         closed: Boolean(entry.closed),
         __baseNickname: entry.nickname || "",
-        __basePostcardType: entry.postcardType || "세배엽",
+        __basePostcardTypes: normalizeDonorTypes(entry.postcardTypes || entry.postcardType || "세배엽"),
+        __basePostcardType: getDonorTypeText(entry.postcardTypes || entry.postcardType || "세배엽"),
         __baseNote: entry.note || "",
         __source: "donor"
       };
@@ -9041,7 +9081,7 @@
             ${escapeHtml(item.nickname || "")}
             ${item.closed ? '<span class="donor-closed-badge">마감</span>' : ""}
           </td>
-          <td class="col-postcard-kind strike-cell"><span class="donor-type-badge">${escapeHtml(item.postcardType || "")}</span></td>
+          <td class="col-postcard-kind strike-cell">${renderDonorTypeBadges(item.postcardTypes || item.postcardType || "")}</td>
           <td class="col-edit"><button type="button" class="edit-btn donor-edit-btn">수정</button></td>
           <td class="col-note strike-cell">${escapeHtml(item.note || "")}</td>
         `;
@@ -9092,11 +9132,21 @@
       }, { merge: true });
     }
 
-    function setSelectedDonorType(type) {
-      selectedDonorType = DONOR_TYPES.includes(type) ? type : "세배엽";
+    function setSelectedDonorTypes(types) {
+      selectedDonorTypes = normalizeDonorTypes(types);
       document.querySelectorAll(".donor-choice-btn").forEach((button) => {
-        button.classList.toggle("active", button.dataset.donorType === selectedDonorType);
+        button.classList.toggle("active", selectedDonorTypes.includes(button.dataset.donorType));
       });
+    }
+
+    function toggleSelectedDonorType(type) {
+      if (!DONOR_TYPES.includes(type)) return;
+
+      const nextTypes = selectedDonorTypes.includes(type)
+        ? selectedDonorTypes.filter((item) => item !== type)
+        : [...selectedDonorTypes, type];
+
+      setSelectedDonorTypes(nextTypes.length > 0 ? nextTypes : [type]);
     }
 
     function setSelectedDonorClosed(closed) {
@@ -9113,7 +9163,7 @@
       donorEditingId = null;
       donorNicknameInput.value = "";
       donorNoteInput.value = "";
-      setSelectedDonorType("세배엽");
+      setSelectedDonorTypes(["세배엽"]);
       setSelectedDonorClosed(false);
       donorDeleteMineBtn.classList.add("hidden");
       donorDeleteAllBtn.classList.add("hidden");
@@ -9128,7 +9178,7 @@
       donorModalTitle.textContent = donorEditingId ? "기온 기부자 명단 수정" : "기온 기부자 명단 추가";
       donorNicknameInput.value = item?.nickname || "";
       donorNoteInput.value = item?.note || "";
-      setSelectedDonorType(item?.postcardType || "세배엽");
+      setSelectedDonorTypes(item?.postcardTypes || item?.postcardType || "세배엽");
       setSelectedDonorClosed(Boolean(item?.closed));
 
       if (donorEditingId) {
@@ -9171,6 +9221,11 @@
         return;
       }
 
+      if (normalizeDonorTypes(selectedDonorTypes).length === 0) {
+        showToast("엽서종류를 하나 이상 선택해주세요.");
+        return;
+      }
+
       try {
         const currentEntries = [...(donorEntries || [])];
 
@@ -9185,7 +9240,8 @@
           currentEntries[targetIndex] = {
             ...original,
             nickname: nicknameList[0],
-            postcardType: selectedDonorType,
+            postcardTypes: normalizeDonorTypes(selectedDonorTypes),
+            postcardType: getDonorTypeText(selectedDonorTypes),
             note,
             closed: selectedDonorClosed,
             updatedAt: Date.now(),
@@ -9203,7 +9259,8 @@
         const newEntries = nicknameList.map((nickname, createdOrder) => ({
           id: createId(),
           nickname,
-          postcardType: selectedDonorType,
+          postcardTypes: normalizeDonorTypes(selectedDonorTypes),
+          postcardType: getDonorTypeText(selectedDonorTypes),
           note,
           closed: false,
           createdAt: batchCreatedAt,
@@ -9236,11 +9293,17 @@
         return;
       }
 
+      if (normalizeDonorTypes(selectedDonorTypes).length === 0) {
+        showToast("엽서종류를 하나 이상 선택해주세요.");
+        return;
+      }
+
       try {
         await updateDonorState(donorEditingId, {
           override: {
             nickname: nicknameList[0],
-            postcardType: selectedDonorType,
+            postcardTypes: normalizeDonorTypes(selectedDonorTypes),
+            postcardType: getDonorTypeText(selectedDonorTypes),
             note
           },
           overrideUpdatedAt: Date.now()
@@ -9343,7 +9406,7 @@
     }
 
     document.querySelectorAll(".donor-choice-btn").forEach((button) => {
-      button.addEventListener("click", () => setSelectedDonorType(button.dataset.donorType));
+      button.addEventListener("click", () => toggleSelectedDonorType(button.dataset.donorType));
     });
 
     document.querySelectorAll(".seg-btn[data-donor-closed]").forEach((button) => {
