@@ -1801,12 +1801,27 @@
       align-items: center;
       justify-content: center;
       padding: 0 10px;
-      border: 1px solid #64b5f6;
       border-radius: 999px;
-      background: #e3f2fd;
-      color: #1565c0;
       font-size: 12px;
       font-weight: 900;
+    }
+    
+    .donor-type-sebae {
+      background: #fff3e0;
+      border: 1px solid #ff9800;
+      color: #e65100;
+    }
+    
+    .donor-type-fourth {
+      background: #f3e5f5;
+      border: 1px solid #9c27b0;
+      color: #6a1b9a;
+    }
+    
+    .donor-type-kkam {
+      background: #e0f7f4;
+      border: 1px solid #26a69a;
+      color: #00695c;
     }
 
     .donor-closed-row {
@@ -8934,7 +8949,7 @@
 
     /* ===== 기온 기부자 명단 공용 탭 ===== */
     const DONOR_LIST_TYPE = "kionDonors";
-    const DONOR_TYPES = ["세배엽", "4기엽", "깜엽", "주엽", "고귀엽", "10기엽"];
+    const DONOR_TYPES = ["세배엽", "4기엽", "깜엽"];
     let donorEntries = [];
     let donorStates = {};
     let donorUnsubscribes = [];
@@ -9003,10 +9018,20 @@
     }
 
     function renderDonorTypeBadges(value) {
-      return normalizeDonorTypes(value)
-        .map((type) => `<span class="donor-type-badge">${escapeHtml(type)}</span>`)
-        .join(" ");
-    }
+  return normalizeDonorTypes(value)
+    .map((type) => {
+      let colorClass = "donor-type-sebae";
+
+      if (type === "4기엽") {
+        colorClass = "donor-type-fourth";
+      } else if (type === "깜엽") {
+        colorClass = "donor-type-kkam";
+      }
+
+      return `<span class="donor-type-badge ${colorClass}">${escapeHtml(type)}</span>`;
+    })
+    .join(" ");
+}
 
     function donorTypesEqual(a, b) {
       const first = normalizeDonorTypes(a);
