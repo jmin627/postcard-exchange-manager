@@ -1817,8 +1817,21 @@
 
     .donor-closed-row .strike-cell,
     .donor-closed-row .donor-type-badge {
-      text-decoration: line-through;
-      color: #a82222;
+      color: #8f1717;
+      text-decoration-line: line-through;
+      text-decoration-thickness: 3px;
+      text-decoration-color: #d42121;
+      text-decoration-skip-ink: none;
+      font-weight: 900;
+    }
+
+    .donor-table .done-row .strike-cell {
+      color: #555b6d;
+      text-decoration-line: line-through;
+      text-decoration-thickness: 3px;
+      text-decoration-color: #4b5164;
+      text-decoration-skip-ink: none;
+      font-weight: 900;
     }
 
     .donor-closed-badge {
@@ -8930,12 +8943,12 @@
     let selectedDonorClosed = false;
 
     function getDonorSharedRef() {
-      return doc(db, "sharedLists", DONOR_LIST_TYPE);
+      return doc(db, "donationLists", "main");
     }
 
     function getDonorStateRef() {
       if (!currentUser) throw new Error("로그인 상태가 아닙니다.");
-      return doc(db, "users", currentUser.uid, "sharedStates", DONOR_LIST_TYPE);
+      return doc(db, "users", currentUser.uid, "donationStates", "main");
     }
 
     async function ensureDonorDocumentsExist() {
@@ -9104,14 +9117,13 @@
     }
 
     async function saveDonorEntries(nextEntries) {
-      donorEntries = nextEntries;
-      renderDonorEntries();
       await setDoc(getDonorSharedRef(), {
         entries: nextEntries,
-        updatedAt: serverTimestamp(),
-        updatedBy: currentUser?.uid || "",
-        updatedByEmail: currentUser?.email || ""
+        updatedAt: serverTimestamp()
       }, { merge: true });
+
+      donorEntries = nextEntries;
+      renderDonorEntries();
     }
 
     async function updateDonorState(entryId, patch) {
@@ -9124,12 +9136,13 @@
         ...patch
       };
 
-      donorStates = states;
-      renderDonorEntries();
       await setDoc(getDonorStateRef(), {
         states,
         updatedAt: serverTimestamp()
       }, { merge: true });
+
+      donorStates = states;
+      renderDonorEntries();
     }
 
     function setSelectedDonorTypes(types) {
