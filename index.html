@@ -9013,6 +9013,36 @@
       const second = normalizeDonorTypes(b);
       return first.length === second.length && first.every((type) => second.includes(type));
     }
+    function normalizeDonorNicknameForCompare(value) {
+      return String(value || "")
+        .trim()
+        .replace(/\s+/g, " ")
+        .toLowerCase();
+    }
+
+    function mergeDonorTypeLists(...typeLists) {
+      const selected = [];
+
+      typeLists.forEach((typeList) => {
+        normalizeDonorTypes(typeList).forEach((type) => {
+          if (!selected.includes(type)) selected.push(type);
+        });
+      });
+
+      return DONOR_TYPES.filter((type) => selected.includes(type));
+    }
+
+    function findActiveDonorEntryByNickname(nickname, exceptId = null, sourceEntries = donorEntries) {
+      const normalized = normalizeDonorNicknameForCompare(nickname);
+      if (!normalized) return null;
+
+      return (sourceEntries || []).find((entry) => {
+        if (!entry || entry.deleted === true) return false;
+        if (exceptId && entry.id === exceptId) return false;
+        return normalizeDonorNicknameForCompare(entry.nickname) === normalized;
+      }) || null;
+    }
+
 
     function getDonorDisplayItem(entry) {
       const state = getDonorState(entry.id);
@@ -9227,6 +9257,7 @@
 
       const nicknameList = getDonorNicknameList();
       const note = donorNoteInput.value.trim();
+      const selectedTypes = normalizeDonorTypes(selectedDonorTypes);
 
       if (nicknameList.length === 0) {
         showToast("닉네임을 입력해주세요.");
@@ -9234,13 +9265,13 @@
         return;
       }
 
-      if (normalizeDonorTypes(selectedDonorTypes).length === 0) {
+      if (selectedTypes.length === 0) {
         showToast("엽서종류를 하나 이상 선택해주세요.");
         return;
       }
 
       try {
-        const currentEntries = [...(donorEntries || [])];
+        let currentEntries = [...(donorEntries || [])];
 
         if (donorEditingId) {
           const targetIndex = currentEntries.findIndex((entry) => entry.id === donorEditingId);
@@ -9250,11 +9281,37 @@
           }
 
           const original = currentEntries[targetIndex];
+          const targetNickname = nicknameList[0];
+          const duplicateEntry = findActiveDonorEntryByNickname(targetNickname, donorEditingId, currentEntries);
+
+          if (duplicateEntry) {
+            const duplicateIndex = currentEntries.findIndex((entry) => entry.id === duplicateEntry.id);
+            const mergedTypes = mergeDonorTypeLists(duplicateEntry.postcardTypes || duplicateEntry.postcardType, selectedTypes);
+
+            currentEntries[duplicateIndex] = {
+              ...duplicateEntry,
+              postcardTypes: mergedTypes,
+              postcardType: getDonorTypeText(mergedTypes),
+              note: note || duplicateEntry.note || "",
+              closed: Boolean(duplicateEntry.closed || selectedDonorClosed),
+              updatedAt: Date.now(),
+              updatedBy: currentUser.uid,
+              updatedByEmail: currentUser.email
+            };
+
+            currentEntries = currentEntries.filter((entry) => entry.id !== donorEditingId);
+
+            await saveDonorEntries(currentEntries);
+            closeDonorModal();
+            showToast("같은 닉네임이 있어 기존 명단에 엽서종류를 합쳤습니다.");
+            return;
+          }
+
           currentEntries[targetIndex] = {
             ...original,
-            nickname: nicknameList[0],
-            postcardTypes: normalizeDonorTypes(selectedDonorTypes),
-            postcardType: getDonorTypeText(selectedDonorTypes),
+            nickname: targetNickname,
+            postcardTypes: selectedTypes,
+            postcardType: getDonorTypeText(selectedTypes),
             note,
             closed: selectedDonorClosed,
             updatedAt: Date.now(),
@@ -9269,25 +9326,76 @@
         }
 
         const batchCreatedAt = Date.now();
-        const newEntries = nicknameList.map((nickname, createdOrder) => ({
-          id: createId(),
-          nickname,
-          postcardTypes: normalizeDonorTypes(selectedDonorTypes),
-          postcardType: getDonorTypeText(selectedDonorTypes),
-          note,
-          closed: false,
-          createdAt: batchCreatedAt,
-          createdOrder,
-          createdBy: currentUser.uid,
-          createdByEmail: currentUser.email,
-          updatedAt: batchCreatedAt,
-          updatedBy: currentUser.uid,
-          updatedByEmail: currentUser.email
-        }));
+        const seenInputNicknames = new Set();
+        const newEntries = [];
+        let mergedCount = 0;
+        let skippedCount = 0;
+
+        nicknameList.forEach((nickname, createdOrder) => {
+          const normalizedNickname = normalizeDonorNicknameForCompare(nickname);
+          if (!normalizedNickname) return;
+
+          if (seenInputNicknames.has(normalizedNickname)) {
+            skippedCount += 1;
+            return;
+          }
+
+          seenInputNicknames.add(normalizedNickname);
+
+          const existingEntry = findActiveDonorEntryByNickname(nickname, null, currentEntries);
+
+          if (existingEntry) {
+            const existingIndex = currentEntries.findIndex((entry) => entry.id === existingEntry.id);
+            const beforeTypes = normalizeDonorTypes(existingEntry.postcardTypes || existingEntry.postcardType);
+            const mergedTypes = mergeDonorTypeLists(beforeTypes, selectedTypes);
+            const addedNewType = mergedTypes.length > beforeTypes.length;
+
+            currentEntries[existingIndex] = {
+              ...existingEntry,
+              postcardTypes: mergedTypes,
+              postcardType: getDonorTypeText(mergedTypes),
+              note: existingEntry.note || note,
+              updatedAt: batchCreatedAt,
+              updatedBy: currentUser.uid,
+              updatedByEmail: currentUser.email
+            };
+
+            if (addedNewType) mergedCount += 1;
+            else skippedCount += 1;
+            return;
+          }
+
+          newEntries.push({
+            id: createId(),
+            nickname,
+            postcardTypes: selectedTypes,
+            postcardType: getDonorTypeText(selectedTypes),
+            note,
+            closed: false,
+            createdAt: batchCreatedAt,
+            createdOrder,
+            createdBy: currentUser.uid,
+            createdByEmail: currentUser.email,
+            updatedAt: batchCreatedAt,
+            updatedBy: currentUser.uid,
+            updatedByEmail: currentUser.email
+          });
+        });
+
+        if (newEntries.length === 0 && mergedCount === 0) {
+          showToast("이미 같은 닉네임과 엽서종류가 있는 명단입니다.");
+          return;
+        }
 
         await saveDonorEntries([...currentEntries, ...newEntries]);
         closeDonorModal();
-        showToast(`${newEntries.length.toLocaleString("ko-KR")}명을 추가했습니다.`);
+
+        const messages = [];
+        if (newEntries.length > 0) messages.push(`${newEntries.length.toLocaleString("ko-KR")}명 추가`);
+        if (mergedCount > 0) messages.push(`${mergedCount.toLocaleString("ko-KR")}명 기존 명단에 엽서종류 추가`);
+        if (skippedCount > 0) messages.push(`${skippedCount.toLocaleString("ko-KR")}명 중복 제외`);
+
+        showToast(messages.join(" · "));
       } catch (error) {
         console.error(error);
         showToast("기온 기부자 명단 저장에 실패했습니다.");
