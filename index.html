@@ -2969,7 +2969,7 @@
   if (!snapshot.exists()) {
     await setDoc(userRef, {
       email: user.email,
-      approved: false,
+      approved: true,
       role: "user",
       createdAt: serverTimestamp()
     });
